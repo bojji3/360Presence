@@ -1,0 +1,3 @@
+@echo off 
+echo Creating 360Presence project files... 
+ 

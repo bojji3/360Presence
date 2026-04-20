@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Hanken Grotesk', system-ui, sans-serif;
+    background: #f4f3ef;
+    color: #141412;
+    overflow-x: hidden;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #eceae4;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #c6c3b7;
+    border: 2px solid #eceae4;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #7a766d;
+  }
+}
+
+@layer components {
+  .glass {
+    background: rgba(20, 20, 30, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .glass-hover:hover {
+    background: rgba(30, 30, 45, 0.8);
+    border-color: rgba(0, 245, 255, 0.3);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #00f5ff 0%, #bf00ff 50%, #ff006e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-border {
+    position: relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, #00f5ff, #bf00ff, #ff006e);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.3);
+  }
+
+  .glow-purple {
+    box-shadow: 0 0 30px rgba(191, 0, 255, 0.3);
+  }
+
+  .glow-pink {
+    box-shadow: 0 0 30px rgba(255, 0, 110, 0.3);
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300;
+    background: linear-gradient(135deg, #00f5ff, #bf00ff);
+    box-shadow: 0 4px 20px rgba(0, 245, 255, 0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 245, 255, 0.5);
+  }
+
+  .card {
+    @apply rounded-2xl p-6 transition-all duration-300;
+    background: rgba(20, 20, 30, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .card:hover {
+    border-color: rgba(0, 245, 255, 0.3);
+    transform: translateY(-4px);
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 transition-all duration-300;
+  }
+
+  .input-field:focus {
+    outline: none;
+    border-color: #00f5ff;
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.2);
+  }
+}

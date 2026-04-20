@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>360Presence — Student Experience</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0f0f1a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.15) 0%, rgba(0, 0, 0, 0) 50%),
+                        radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.15) 0%, rgba(0, 0, 0, 0) 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Glassmorphism Navbar */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(15, 15, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #a8b2ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 16px;
+            border-radius: 100px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .user-badge:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.02);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 20px;
+            border-radius: 100px;
+            text-decoration: none;
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Main Container */
+        .main-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Welcome Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+            border-radius: 32px;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(102, 126, 234, 0.2);
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+        }
+
+        .hero-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff 0%, #a8b2ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-section p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 1rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: #667eea;
+        }
+
+        /* Events Grid */
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .event-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .event-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(102, 126, 234, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .event-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        }
+
+        .event-badge {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: rgba(102, 126, 234, 0.2);
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .event-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 1rem;
+        }
+
+        .event-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .event-desc {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .event-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Map Container */
+        .map-container {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        #map {
+            height: 350px;
+            border-radius: 18px;
+        }
+
+        /* Tracking Panel */
+        .tracking-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .track-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .track-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .track-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .track-btn.active {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .location-status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Students Panel */
+        .students-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .students-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .students-count {
+            background: #667eea;
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .students-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .student-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s ease;
+        }
+
+        .student-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+        .student-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .student-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            background: #28a745;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        /* Attendance Table */
+        .attendance-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .attendance-table th {
+            text-align: left;
+            padding: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .attendance-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Toast Notifications */
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 2000;
+            animation: slideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            color: #1a1a2e;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px) scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .events-grid {
+                grid-template-columns: 1fr;
+            }
+            .hero-section h2 {
+                font-size: 1.5rem;
+            }
+            .nav-container {
+                padding: 1rem;
+            }
+            .main-container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-gradient"></div>
+
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <div class="logo-icon">📍</div>
+                <h1>360Presence</h1>
+            </div>
+            <div class="user-section">
+                <div class="user-badge">
+                    <div class="user-avatar" id="userAvatar"></div>
+                    <span id="usernameDisplay"></span>
+                </div>
+                <a href="/logout/" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Exit</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <div class="hero-section">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-check-circle"></i> Real-time Attendance
+                </div>
+                <h2 id="welcomeMessage"></h2>
+                <p>Your location is automatically tracked. Stay within the event radius to check in.</p>
+            </div>
+        </div>
+
+        <div class="stats-grid" id="statusGrid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-location-dot"></i></div>
+                <div class="stat-value">—</div>
+                <div class="stat-label">Current Status</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-route"></i></div>
+                <div class="stat-value">—</div>
+                <div class="stat-label">Distance</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-value">—</div>
+                <div class="stat-label">Last Check-in</div>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <div class="section-title">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Active Events</span>
+            </div>
+        </div>
+        <div class="events-grid" id="eventsGrid"></div>
+
+        <div id="trackingPanel" style="display: none;">
+            <div class="map-container" id="mapContainer">
+                <div id="map"></div>
+            </div>
+            
+            <div class="tracking-panel">
+                <button class="track-btn" id="trackBtn">
+                    <i class="fas fa-play"></i>
+                    <span>Start Live Tracking</span>
+                </button>
+                <div class="location-status" id="locationStatus">
+                    <i class="fas fa-satellite-dish"></i> Ready to track
+                </div>
+            </div>
+
+            <div class="students-panel">
+                <div class="students-header">
+                    <div>
+                        <i class="fas fa-users" style="color: #667eea; margin-right: 8px;"></i>
+                        <strong>Present Students</strong>
+                    </div>
+                    <span class="students-count" id="studentsCount">0</span>
+                </div>
+                <div class="students-list" id="studentsList">
+                    <div class="empty-state">Select an event to see who's here</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <div class="section-title">
+                <i class="fas fa-history"></i>
+                <span>Attendance History</span>
+            </div>
+        </div>
+        <div class="attendance-panel">
+            <table class="attendance-table">
+                <thead>
+                    <tr><th>Event</th><th>Check In</th><th>Check Out</th><th>Duration</th></tr>
+                </thead>
+                <tbody id="attendanceBody">
+                    <tr><td colspan="4" class="empty-state">No attendance records yet</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentEvent = null;
+        let watchId = null;
+        let isTracking = false;
+        let map = null;
+        let userMarker = null;
+        let eventMarker = null;
+        let radiusCircle = null;
+        let peerMarkers = {};
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast-notification`;
+            const icon = type === 'success' ? '✅' : type === 'info' ? 'ℹ️' : '⚠️';
+            toast.innerHTML = `${icon} <span style="font-weight:500;">${message}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function initMap(lat, lng, radius, userLat = null, userLng = null) {
+            if (map) map.remove();
+            
+            map = L.map('map').setView([lat, lng], 17);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+                subdomains: 'abcd',
+                style: 'dark'
+            }).addTo(map);
+            
+            eventMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    html: '<div style="background: #667eea; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 20px rgba(102,126,234,0.5);"></div>',
+                    iconSize: [24, 24]
+                })
+            }).addTo(map);
+            eventMarker.bindPopup('<b>Event Center</b>').openPopup();
+            
+            radiusCircle = L.circle([lat, lng], {
+                color: '#667eea',
+                fillColor: '#667eea',
+                fillOpacity: 0.1,
+                radius: radius,
+                weight: 2,
+                dashArray: '5, 10'
+            }).addTo(map);
+            
+            if (userLat && userLng) {
+                userMarker = L.marker([userLat, userLng], {
+                    icon: L.divIcon({
+                        html: '<div style="background: #28a745; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 15px rgba(40,167,69,0.5);"></div>',
+                        iconSize: [16, 16]
+                    })
+                }).addTo(map);
+                userMarker.bindPopup('<b>You are here</b>').openPopup();
+                map.setView([userLat, userLng], 17);
+            }
+        }
+
+        function updateMap(userLat, userLng) {
+            if (!map || !currentEvent) return;
+            if (userMarker) userMarker.setLatLng([userLat, userLng]);
+            else {
+                userMarker = L.marker([userLat, userLng], {
+                    icon: L.divIcon({
+                        html: '<div style="background: #28a745; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 15px rgba(40,167,69,0.5);"></div>',
+                        iconSize: [16, 16]
+                    })
+                }).addTo(map);
+            }
+            map.setView([userLat, userLng], 17);
+        }
+
+        async function loadUser() {
+            try {
+                const response = await fetch('/api/user/');
+                const data = await response.json();
+                document.getElementById('userAvatar').innerText = data.username.charAt(0).toUpperCase();
+                document.getElementById('usernameDisplay').innerText = data.username;
+                document.getElementById('welcomeMessage').innerHTML = `Welcome back, ${data.username}! <i class="fas fa-smile-wink"></i>`;
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadEvents() {
+            try {
+                const response = await fetch('/api/events/');
+                const data = await response.json();
+                const grid = document.getElementById('eventsGrid');
+                
+                if (!data.events || data.events.length === 0) {
+                    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-calendar-times" style="font-size:48px;margin-bottom:1rem;opacity:0.5;"></i><p>No active events available</p></div>';
+                    return;
+                }
+                
+                grid.innerHTML = '';
+                data.events.forEach(event => {
+                    const card = document.createElement('div');
+                    card.className = 'event-card' + (currentEvent?.id === event.id ? ' selected' : '');
+                    card.onclick = () => selectEvent(event);
+                    card.innerHTML = `
+                        <div class="event-badge"><i class="fas fa-map-marker-alt"></i> ${event.radius}m</div>
+                        <div class="event-icon">📅</div>
+                        <div class="event-name">${event.name}</div>
+                        <div class="event-desc">${event.description || 'No description available'}</div>
+                        <div class="event-meta">
+                            <span><i class="fas fa-clock"></i> ${new Date(event.start_time).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            <span><i class="fas fa-calendar"></i> ${new Date(event.start_time).toLocaleDateString()}</span>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        function selectEvent(event) {
+            currentEvent = event;
+            document.getElementById('trackingPanel').style.display = 'block';
+            loadEvents();
+            loadPresentStudents();
+            initMap(event.latitude, event.longitude, event.radius);
+            showToast(`Selected: ${event.name}`, 'info');
+        }
+
+        async function loadPresentStudents() {
+            if (!currentEvent) return;
+            try {
+                const response = await fetch(`/api/present-students/${currentEvent.id}/`);
+                const data = await response.json();
+                document.getElementById('studentsCount').innerText = data.count || 0;
+
+                // Plot peer markers on the map
+                if (map) {
+                    const seen = new Set();
+                    (data.students || []).forEach((s, idx) => {
+                        if (s.latitude == null || s.longitude == null) return;
+                        const key = s.name + '_' + idx;
+                        seen.add(key);
+                        const html = `<div style="background:#f59e0b;width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 10px rgba(245,158,11,0.6);"></div>`;
+                        if (peerMarkers[key]) {
+                            peerMarkers[key].setLatLng([s.latitude, s.longitude]);
+                        } else {
+                            peerMarkers[key] = L.marker([s.latitude, s.longitude], {
+                                icon: L.divIcon({ html, iconSize: [14, 14] })
+                            }).addTo(map).bindPopup(`<b>${s.name}</b>`);
+                        }
+                    });
+                    Object.keys(peerMarkers).forEach(k => {
+                        if (!seen.has(k)) { map.removeLayer(peerMarkers[k]); delete peerMarkers[k]; }
+                    });
+                }
+
+                const listDiv = document.getElementById('studentsList');
+                if (data.students && data.students.length > 0) {
+                    listDiv.innerHTML = data.students.map(s => `
+                        <div class="student-item">
+                            <div class="student-info">
+                                <div class="student-avatar">${s.name.charAt(0).toUpperCase()}</div>
+                                <div><strong>${s.name}</strong><div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">Checked in</div></div>
+                            </div>
+                            <span class="online-dot"></span>
+                        </div>
+                    `).join('');
+                } else {
+                    listDiv.innerHTML = '<div class="empty-state"><i class="fas fa-user-friends"></i><p>No students present yet</p></div>';
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadAttendance() {
+            try {
+                const response = await fetch('/api/my-attendance/');
+                const data = await response.json();
+                const tbody = document.getElementById('attendanceBody');
+                if (data.attendance && data.attendance.length > 0) {
+                    tbody.innerHTML = data.attendance.map(a => `
+                        <tr>
+                            <td><strong>${a.event}</strong></td>
+                            <td>${a.check_in ? new Date(a.check_in).toLocaleString() : '-'}</td>
+                            <td>${a.check_out ? new Date(a.check_out).toLocaleString() : '-'}</td>
+                            <td>${a.duration_minutes ? a.duration_minutes + ' mins' : '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function updateStatusUI(data) {
+            const isInside = data.is_inside;
+            const distance = data.distance_meters;
+            const statusDiv = document.getElementById('statusGrid');
+            
+            if (data.checked_in) {
+                statusDiv.innerHTML = `
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><div class="stat-value">✅ Checked In</div><div class="stat-label">${data.event}</div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-route"></i></div><div class="stat-value">${distance}m</div><div class="stat-label">from center</div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-value">Just now</div><div class="stat-label">Check-in time</div></div>
+                `;
+                showToast(`✓ Checked in to ${data.event}!`, 'success');
+                loadPresentStudents();
+                loadAttendance();
+            } else if (data.checked_out) {
+                statusDiv.innerHTML = `
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-clock"></i></div><div class="stat-value">⏰ Checked Out</div><div class="stat-label">${data.duration_minutes} minutes</div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-route"></i></div><div class="stat-value">${distance}m</div><div class="stat-label">from center</div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-calendar-check"></i></div><div class="stat-value">Complete</div><div class="stat-label">Attendance recorded</div></div>
+                `;
+                showToast(`✓ Checked out. Duration: ${data.duration_minutes} minutes`, 'info');
+                loadPresentStudents();
+                loadAttendance();
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-location-dot"></i></div><div class="stat-value">${isInside ? '✅ Inside' : '❌ Outside'}</div><div class="stat-label">${isInside ? 'Within event radius' : 'Outside event radius'}</div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-route"></i></div><div class="stat-value">${distance}m</div><div class="stat-label">from ${currentEvent?.name || 'event'}</div></div>
+                    <div class="stat-card"><div class="stat-icon"><i class="fas fa-bullseye"></i></div><div class="stat-value">${Math.max(0, Math.round(100 - (distance / (currentEvent?.radius || 1) * 100)))}%</div><div class="stat-label">within radius</div></div>
+                `;
+            }
+        }
+
+        function startTracking() {
+            if (!navigator.geolocation) {
+                showToast('Geolocation not supported', 'warning');
+                return;
+            }
+            
+            watchId = navigator.geolocation.watchPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    document.getElementById('locationStatus').innerHTML = `<i class="fas fa-satellite-dish"></i> ${latitude.toFixed(6)}, ${longitude.toFixed(6)} | ±${position.coords.accuracy}m`;
+                    updateMap(latitude, longitude);
+                    
+                    try {
+                        const response = await fetch('/api/track/', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ latitude, longitude, event_id: currentEvent.id })
+                        });
+                        const data = await response.json();
+                        updateStatusUI(data);
+                    } catch(e) { console.error(e); }
+                },
+                (error) => {
+                    let msg = error.code === 1 ? 'Please enable GPS' : 'Location unavailable';
+                    document.getElementById('locationStatus').innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${msg}`;
+                    showToast(msg, 'warning');
+                },
+                { enableHighAccuracy: true, maximumAge: 30000, timeout: 27000 }
+            );
+            
+            isTracking = true;
+            const btn = document.getElementById('trackBtn');
+            btn.innerHTML = '<i class="fas fa-stop"></i><span>Stop Tracking</span>';
+            btn.classList.add('active');
+            showToast('Live tracking activated', 'success');
+        }
+
+        function stopTracking() {
+            if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+            isTracking = false;
+            const btn = document.getElementById('trackBtn');
+            btn.innerHTML = '<i class="fas fa-play"></i><span>Start Live Tracking</span>';
+            btn.classList.remove('active');
+            document.getElementById('locationStatus').innerHTML = '<i class="fas fa-pause"></i> Tracking paused';
+            showToast('Tracking stopped', 'info');
+        }
+
+        document.getElementById('trackBtn').onclick = () => {
+            if (!currentEvent) { showToast('Select an event first', 'warning'); return; }
+            isTracking ? stopTracking() : startTracking();
+        };
+
+        loadUser();
+        loadEvents();
+        loadAttendance();
+        setInterval(() => { if (currentEvent) loadPresentStudents(); }, 5000);
+        setInterval(loadEvents, 15000);
+
+        const seenAnnouncements = new Set();
+        async function pollAnnouncements() {
+            try {
+                const r = await fetch('/api/announcements/');
+                const d = await r.json();
+                (d.announcements || []).reverse().forEach(a => {
+                    if (!seenAnnouncements.has(a.id)) {
+                        seenAnnouncements.add(a.id);
+                        showToast(a.message, 'info');
+                    }
+                });
+            } catch(e) { console.error(e); }
+        }
+        // Prime the seen-set so we don't toast old announcements on first load
+        (async () => {
+            try {
+                const r = await fetch('/api/announcements/');
+                const d = await r.json();
+                (d.announcements || []).forEach(a => seenAnnouncements.add(a.id));
+            } catch(e) {}
+            setInterval(pollAnnouncements, 5000);
+        })();
+    </script>
+</body>
+</html>

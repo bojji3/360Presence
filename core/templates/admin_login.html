@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360Presence - Admin Login</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            padding: 40px;
+            width: 400px;
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 { text-align: center; color: #1a1a2e; margin-bottom: 10px; font-size: 26px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
+        .logo { text-align: center; font-size: 50px; margin-bottom: 20px; }
+        input {
+            width: 100%; padding: 12px; margin: 10px 0;
+            border: 1px solid #ddd; border-radius: 8px;
+            font-size: 16px; transition: all 0.3s;
+        }
+        input:focus { outline: none; border-color: #00b4db; box-shadow: 0 0 5px rgba(0,180,219,0.3); }
+        button {
+            width: 100%; padding: 12px;
+            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+            color: white; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+            margin-top: 20px; transition: transform 0.2s;
+        }
+        button:hover { transform: translateY(-2px); }
+        .back-link { text-align: center; margin-top: 20px; color: #666; }
+        .back-link a { color: #00b4db; text-decoration: none; }
+        .error { background: #fee; color: #c33; padding: 10px; border-radius: 8px; margin-top: 10px; text-align: center; font-size: 14px; }
+        .success { background: #efe; color: #3c3; padding: 10px; border-radius: 8px; margin-top: 10px; text-align: center; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🛡️</div>
+        <h1>Admin Portal</h1>
+        <div class="subtitle">Event Administrator Login</div>
+
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Admin Username" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit">Login as Admin</button>
+        </form>
+
+        <div class="back-link">
+            Student? <a href="/student-login/">Student login</a>
+        </div>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const response = await fetch('/api/login/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username, password, role: 'admin' })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                document.getElementById('message').innerHTML = '<div class="success">✓ Login successful! Redirecting...</div>';
+                setTimeout(() => { window.location.href = '/admin-dashboard/'; }, 800);
+            } else {
+                document.getElementById('message').innerHTML = '<div class="error">✗ ' + data.error + '</div>';
+            }
+        });
+    </script>
+</body>
+</html>

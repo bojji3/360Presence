@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360Presence — Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f0f2f5;
+            color: #1a1a2e;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+        .user-section { display: flex; align-items: center; gap: 20px; }
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s;
+        }
+        .logout-btn:hover { background: rgba(255,255,255,0.3); }
+        .main-container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-icon { font-size: 2rem; margin-bottom: 1rem; }
+        .stat-value { font-size: 2rem; font-weight: 700; }
+        .stat-label { color: #666; margin-top: 0.5rem; }
+        
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            color: #00b4db;
+            border-bottom: 2px solid #00b4db;
+            margin-bottom: -2px;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .form-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .form-group { margin-bottom: 1.5rem; }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #333;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #00b4db;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,180,219,0.3); }
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        #eventMap {
+            height: 400px;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+        }
+        
+        .events-list {
+            display: grid;
+            gap: 1rem;
+        }
+        .event-item {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .event-info h3 { margin-bottom: 0.5rem; }
+        .event-info p { color: #666; font-size: 0.9rem; margin: 0.25rem 0; }
+        .event-actions { display: flex; gap: 0.5rem; }
+        .event-actions button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .attendance-table {
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .attendance-table th, .attendance-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .attendance-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .announcement-banner {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .online-dot {
+            width: 10px;
+            height: 10px;
+            background: #28a745;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        #monitorMap {
+            height: 400px;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .main-container { padding: 0 1rem; }
+            .event-item { flex-direction: column; gap: 1rem; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <div class="logo-icon">📍</div>
+                <h1>360Presence Admin</h1>
+            </div>
+            <div class="user-section">
+                <span id="adminName"><i class="fas fa-user-shield"></i> Admin</span>
+                <a href="/logout/" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <div class="tabs">
+            <button type="button" class="tab active" data-tab="events">📅 Manage Events</button>
+            <button type="button" class="tab" data-tab="monitor">📡 Live Monitoring</button>
+            <button type="button" class="tab" data-tab="records">📊 Attendance Records</button>
+        </div>
+
+        <!-- Events Tab -->
+        <div id="events-tab" class="tab-content active">
+            <div class="form-card">
+                <h2 id="eventFormTitle">Create New Event</h2>
+                <form id="eventForm">
+                    <input type="hidden" id="eventId" value="">
+                    <div class="form-group">
+                        <label>Event Name</label>
+                        <input type="text" id="eventName" required placeholder="e.g., University Symposium 2024">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="eventDesc" rows="3" placeholder="Event description..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Event Location (Click on map to set)</label>
+                        <div id="eventMap"></div>
+                        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                            <input type="text" id="eventLat" placeholder="Latitude" readonly>
+                            <input type="text" id="eventLng" placeholder="Longitude" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Radius (meters)</label>
+                        <input type="number" id="eventRadius" value="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Start Date & Time</label>
+                        <input type="datetime-local" id="eventStart" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date & Time</label>
+                        <input type="datetime-local" id="eventEnd" required>
+                    </div>
+                    <button type="submit" id="eventSubmitBtn" class="btn-primary">Create Event</button>
+                    <button type="button" id="cancelEdit" class="btn-secondary" style="display:none;">Cancel</button>
+                </form>
+            </div>
+
+            <h2>Your Events</h2>
+            <div class="events-list" id="eventsList"></div>
+        </div>
+
+        <!-- Live Monitoring Tab -->
+        <div id="monitor-tab" class="tab-content">
+            <div class="announcement-banner" id="announcementBanner">
+                <span><i class="fas fa-bullhorn"></i> <span id="announcementText"></span></span>
+                <button type="button" onclick="hideAnnouncement()" style="background:none; border:none; color:white; font-size:1.5rem;">&times;</button>
+            </div>
+            
+            <div class="form-card">
+                <h3>📢 Make Announcement</h3>
+                <div class="form-group">
+                    <input type="text" id="announcementMsg" placeholder="Type announcement message...">
+                </div>
+                <button type="button" onclick="makeAnnouncement()" class="btn-primary">Broadcast Announcement</button>
+                <button type="button" onclick="announceLeaveRadius()" class="btn-primary" style="background: #ff6b6b; margin-left: 10px;">📢 Announce: Students can leave radius</button>
+            </div>
+
+            <div class="form-card">
+                <h3>📍 Real-time Presence</h3>
+                <div id="monitorMap"></div>
+                <div id="liveStudentsList" style="margin-top: 1rem;"></div>
+            </div>
+        </div>
+
+        <!-- Attendance Records Tab -->
+        <div id="records-tab" class="tab-content">
+            <div class="form-card">
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <select id="exportEventSelect" style="flex:1;">
+                        <option value="">All Events</option>
+                    </select>
+                    <button type="button" onclick="exportAttendance()" class="btn-primary">
+                        <i class="fas fa-download"></i> Export to CSV
+                    </button>
+                </div>
+            </div>
+            
+            <div class="attendance-table">
+                <table style="width:100%">
+                    <thead>
+                        <tr><th>Student Name</th><th>Event</th><th>Check In</th><th>Check Out</th><th>Duration</th></tr>
+                    </thead>
+                    <tbody id="attendanceRecordsBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map = null;
+        let marker = null;
+        let circle = null;
+        let monitorMap = null;
+        let studentMarkers = {};
+        let updateInterval = null;
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+                if (tab.dataset.tab === 'monitor') startLiveMonitoring();
+                else if (tab.dataset.tab === 'records') loadAttendanceRecords();
+            });
+        });
+
+        // Initialize map for event creation
+        function initMap() {
+            map = L.map('eventMap').setView([13.6245, 123.1869], 16);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+                subdomains: 'abcd'
+            }).addTo(map);
+            
+            map.on('click', (e) => {
+                const { lat, lng } = e.latlng;
+                document.getElementById('eventLat').value = lat.toFixed(6);
+                document.getElementById('eventLng').value = lng.toFixed(6);
+                
+                if (marker) map.removeLayer(marker);
+                marker = L.marker([lat, lng]).addTo(map);
+                if (circle) map.removeLayer(circle);
+                const radius = parseInt(document.getElementById('eventRadius').value);
+                circle = L.circle([lat, lng], { radius: radius, color: '#00b4db', fillOpacity: 0.1 }).addTo(map);
+            });
+            
+            document.getElementById('eventRadius').addEventListener('change', () => {
+                if (marker && circle) {
+                    const pos = marker.getLatLng();
+                    map.removeLayer(circle);
+                    circle = L.circle([pos.lat, pos.lng], { radius: parseInt(document.getElementById('eventRadius').value), color: '#00b4db', fillOpacity: 0.1 }).addTo(map);
+                }
+            });
+        }
+
+        // Load events list
+        async function loadEvents() {
+            try {
+                const response = await fetch('/api/admin/events/');
+                const events = await response.json();
+                const listDiv = document.getElementById('eventsList');
+                
+                if (events.length === 0) {
+                    listDiv.innerHTML = '<div class="form-card" style="text-align: center;">No events yet. Create your first event above!</div>';
+                } else {
+                    listDiv.innerHTML = events.map(e => `
+                        <div class="event-item">
+                            <div class="event-info">
+                                <h3>${e.name}</h3>
+                                <p>📍 ${e.latitude}, ${e.longitude} | 📏 ${e.radius}m</p>
+                                <p>🕐 ${new Date(e.start_time).toLocaleString()} - ${new Date(e.end_time).toLocaleString()}</p>
+                                <p>${e.is_active ? '✅ Active' : '❌ Inactive'}</p>
+                            </div>
+                            <div class="event-actions">
+                                <button type="button" onclick="editEvent(${e.id})" style="background:#00b4db; color:white;"><i class="fas fa-edit"></i> Edit</button>
+                                <button type="button" onclick="toggleEventStatus(${e.id}, ${!e.is_active})" style="background:#ffc107; color:#333;"><i class="fas fa-power-off"></i> ${e.is_active ? 'Deactivate' : 'Activate'}</button>
+                                <button type="button" onclick="deleteEvent(${e.id})" style="background:#dc3545; color:white;"><i class="fas fa-trash"></i> Delete</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
+                // Update stats
+                document.getElementById('statsGrid').innerHTML = `
+                    <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value">${events.length}</div><div class="stat-label">Total Events</div></div>
+                    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value">${events.filter(e=>e.is_active).length}</div><div class="stat-label">Active Events</div></div>
+                `;
+            } catch(e) {
+                console.error('Error loading events:', e);
+            }
+        }
+
+        // Create/Update event
+        document.getElementById('eventForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const eventId = document.getElementById('eventId').value;
+            const data = {
+                name: document.getElementById('eventName').value,
+                description: document.getElementById('eventDesc').value,
+                latitude: parseFloat(document.getElementById('eventLat').value),
+                longitude: parseFloat(document.getElementById('eventLng').value),
+                radius: parseInt(document.getElementById('eventRadius').value),
+                start_time: document.getElementById('eventStart').value,
+                end_time: document.getElementById('eventEnd').value
+            };
+            
+            const url = eventId ? `/api/admin/events/${eventId}/` : '/api/admin/events/';
+            const method = eventId ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                alert(eventId ? 'Event updated!' : 'Event created!');
+                resetForm();
+                loadEvents();
+            } else {
+                alert('Error saving event');
+            }
+        });
+
+        async function editEvent(id) {
+            try {
+                const r = await fetch(`/api/admin/events/${id}/`);
+                if (!r.ok) { alert('Failed to load event'); return; }
+                const event = await r.json();
+
+                document.getElementById('eventFormTitle').innerText = 'Edit Event';
+                document.getElementById('eventSubmitBtn').innerText = 'Update Event';
+                document.getElementById('cancelEdit').style.display = 'inline-block';
+                document.getElementById('eventId').value = event.id;
+                document.getElementById('eventName').value = event.name;
+                document.getElementById('eventDesc').value = event.description || '';
+                document.getElementById('eventLat').value = event.latitude;
+                document.getElementById('eventLng').value = event.longitude;
+                document.getElementById('eventRadius').value = event.radius;
+                document.getElementById('eventStart').value = event.start_time.slice(0,16);
+                document.getElementById('eventEnd').value = event.end_time.slice(0,16);
+
+                if (marker) map.removeLayer(marker);
+                marker = L.marker([event.latitude, event.longitude]).addTo(map);
+                if (circle) map.removeLayer(circle);
+                circle = L.circle([event.latitude, event.longitude], { radius: event.radius, color: '#00b4db', fillOpacity: 0.1 }).addTo(map);
+                map.setView([event.latitude, event.longitude], 16);
+                setTimeout(() => map.invalidateSize(), 100);
+
+                document.getElementById('eventFormTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (err) {
+                console.error(err);
+                alert('Failed to load event');
+            }
+        }
+        window.editEvent = editEvent;
+
+        function resetForm() {
+            document.getElementById('eventFormTitle').innerText = 'Create New Event';
+            document.getElementById('eventSubmitBtn').innerText = 'Create Event';
+            document.getElementById('eventId').value = '';
+            document.getElementById('eventName').value = '';
+            document.getElementById('eventDesc').value = '';
+            document.getElementById('eventLat').value = '';
+            document.getElementById('eventLng').value = '';
+            document.getElementById('eventRadius').value = '100';
+            document.getElementById('eventStart').value = '';
+            document.getElementById('eventEnd').value = '';
+            document.getElementById('cancelEdit').style.display = 'none';
+            if (marker) map.removeLayer(marker);
+            if (circle) map.removeLayer(circle);
+        }
+
+        document.getElementById('cancelEdit').onclick = resetForm;
+
+        async function toggleEventStatus(id, active) {
+            await fetch(`/api/admin/events/${id}/`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_active: active })
+            });
+            loadEvents();
+        }
+
+        async function deleteEvent(id) {
+            if (confirm('Delete this event?')) {
+                await fetch(`/api/admin/events/${id}/`, { method: 'DELETE' });
+                loadEvents();
+            }
+        }
+
+        // Live monitoring
+        async function startLiveMonitoring() {
+            if (!monitorMap) {
+                monitorMap = L.map('monitorMap').setView([13.6245, 123.1869], 15);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; OSM',
+                    subdomains: 'abcd'
+                }).addTo(monitorMap);
+            }
+            
+            if (updateInterval) clearInterval(updateInterval);
+            updateInterval = setInterval(loadLiveStudents, 5000);
+            loadLiveStudents();
+        }
+
+        async function loadLiveStudents() {
+            try {
+                const response = await fetch('/api/admin/live-students/');
+                const data = await response.json();
+                
+                Object.values(studentMarkers).forEach(m => monitorMap.removeLayer(m));
+                studentMarkers = {};
+                
+                if (data.students && data.students.length > 0) {
+                    data.students.forEach(student => {
+                        if (student.latitude && student.longitude) {
+                            const marker = L.marker([student.latitude, student.longitude], {
+                                icon: L.divIcon({
+                                    html: `<div style="background: ${student.is_inside ? '#28a745' : '#dc3545'}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>`,
+                                    iconSize: [14, 14]
+                                })
+                            }).addTo(monitorMap);
+                            marker.bindPopup(`<b>${student.name}</b><br>${student.is_inside ? '✅ Inside radius' : '❌ Outside radius'}`);
+                            studentMarkers[student.id] = marker;
+                        }
+                    });
+                }
+                
+                document.getElementById('liveStudentsList').innerHTML = `
+                    <h3>Currently Active Students (${data.students?.length || 0})</h3>
+                    ${data.students?.map(s => `
+                        <div class="event-item" style="margin-bottom:0.5rem; padding:1rem;">
+                            <div>
+                                <strong><i class="fas fa-user-graduate"></i> ${s.name}</strong><br>
+                                <small>${s.is_inside ? '✅ Inside event radius' : '❌ Outside event radius'}</small>
+                            </div>
+                            <span class="online-dot" style="background: ${s.is_inside ? '#28a745' : '#dc3545'};"></span>
+                        </div>
+                    `).join('') || '<div class="form-card" style="text-align: center;">No active students at the moment</div>'}
+                `;
+            } catch(e) {
+                console.error('Error loading live students:', e);
+            }
+        }
+
+        // Announcements
+        async function broadcast(msg) {
+            const r = await fetch('/api/admin/announce/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ message: msg })
+            });
+            if (r.ok) { showAnnouncement(msg); }
+            else { alert('Failed to broadcast announcement'); }
+        }
+
+        function makeAnnouncement() {
+            const msg = document.getElementById('announcementMsg').value.trim();
+            if (msg) {
+                broadcast(msg);
+                document.getElementById('announcementMsg').value = '';
+            }
+        }
+
+        function announceLeaveRadius() {
+            broadcast("📢 ANNOUNCEMENT: Students may now leave the event radius. Thank you for your participation!");
+        }
+
+        function showAnnouncement(msg) {
+            document.getElementById('announcementText').innerText = msg;
+            document.getElementById('announcementBanner').style.display = 'flex';
+            setTimeout(() => hideAnnouncement(), 10000);
+        }
+
+        function hideAnnouncement() {
+            document.getElementById('announcementBanner').style.display = 'none';
+        }
+
+        // Attendance records with sorting
+        async function loadAttendanceRecords() {
+            try {
+                const response = await fetch('/api/admin/attendance/');
+                let records = await response.json();
+                
+                if (!records || records.length === 0) {
+                    document.getElementById('attendanceRecordsBody').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">No attendance records found</td></tr>';
+                    return;
+                }
+                
+                const groupedByEvent = {};
+                records.forEach(record => {
+                    if (!groupedByEvent[record.event_name]) {
+                        groupedByEvent[record.event_name] = [];
+                    }
+                    groupedByEvent[record.event_name].push(record);
+                });
+                
+                const sortedEvents = Object.keys(groupedByEvent).sort((a, b) => {
+                    const eventA = groupedByEvent[a][0];
+                    const eventB = groupedByEvent[b][0];
+                    return (eventB.event_start || '').localeCompare(eventA.event_start || '');
+                });
+                
+                const events = [...new Set(records.map(r => r.event_name))];
+                events.sort();
+                const exportSelect = document.getElementById('exportEventSelect');
+                if (exportSelect) {
+                    exportSelect.innerHTML = '<option value="">All Events</option>' + events.map(e => `<option value="${e}">${e}</option>`).join('');
+                }
+                
+                let html = '';
+                for (const eventName of sortedEvents) {
+                    const eventRecords = groupedByEvent[eventName];
+                    eventRecords.sort((a, b) => (b.check_in || '').localeCompare(a.check_in || ''));
+                    
+                    html += `<tr style="background: #e8f4f8;"><td colspan="5" style="padding: 12px; font-weight: bold; font-size: 1.1rem;">📅 ${eventName}</td></tr>`;
+                    html += eventRecords.map(r => `
+                        <tr>
+                            <td style="padding-left: 2rem;">👤 ${r.student_name}</td>
+                            <td>${r.event_name}</td>
+                            <td>${r.check_in || '-'}</td>
+                            <td>${r.check_out || '-'}</td>
+                            <td>${r.duration || '-'}</td>
+                        </tr>
+                    `).join('');
+                }
+                
+                document.getElementById('attendanceRecordsBody').innerHTML = html;
+            } catch(e) {
+                console.error('Error loading attendance:', e);
+                document.getElementById('attendanceRecordsBody').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">Error loading records</td></tr>';
+            }
+        }
+
+        async function exportAttendance() {
+            const eventName = document.getElementById('exportEventSelect').value;
+            window.location.href = `/api/admin/export/?event=${encodeURIComponent(eventName)}`;
+        }
+
+        // Load admin info
+        async function loadAdmin() {
+            try {
+                const response = await fetch('/api/user/');
+                const data = await response.json();
+                document.getElementById('adminName').innerHTML = `<i class="fas fa-user-shield"></i> ${data.username}`;
+            } catch(e) {
+                console.error('Error loading admin:', e);
+            }
+        }
+
+        // Initialize everything
+        initMap();
+        loadEvents();
+        loadAdmin();
+    </script>
+</body>
+</html>
