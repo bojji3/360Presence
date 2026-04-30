@@ -76,12 +76,15 @@ def get_active_events(request):
     from django.utils import timezone
     now = timezone.now()
     events = Event.objects.filter(
-        start_time__lte=now, 
-        end_time__gte=now, 
-        is_active=True
-    )
+        is_active=True,
+        end_time__gte=now
+    ).order_by('start_time')
     events_data = []
     for e in events:
+        if e.start_time <= now <= e.end_time:
+            status = 'active'
+        else:
+            status = 'upcoming'
         events_data.append({
             'id': e.id,
             'name': e.name,
@@ -92,7 +95,7 @@ def get_active_events(request):
             'radius': e.radius,
             'start_time': e.start_time.isoformat(),
             'end_time': e.end_time.isoformat(),
-            'status': 'active',
+            'status': status,
         })
     return JsonResponse({'events': events_data})
 

@@ -38,21 +38,31 @@ def admin_events(request, event_id=None):
             } for e in events], safe=False)
     
     elif request.method == 'POST':
+        from django.utils.dateparse import parse_datetime
+        from django.utils import timezone
         data = json.loads(request.body)
+        start_time = parse_datetime(data['start_time'])
+        end_time = parse_datetime(data['end_time'])
+        if timezone.is_naive(start_time):
+            start_time = timezone.make_aware(start_time)
+        if timezone.is_naive(end_time):
+            end_time = timezone.make_aware(end_time)
         event = Event.objects.create(
             name=data['name'],
             description=data.get('description', ''),
             latitude=data['latitude'],
             longitude=data['longitude'],
             radius=data['radius'],
-            start_time=data['start_time'],
-            end_time=data['end_time'],
+            start_time=start_time,
+            end_time=end_time,
             created_by=request.user,
             is_active=True
         )
         return JsonResponse({'id': event.id, 'message': 'Event created'})
     
     elif request.method == 'PUT':
+        from django.utils.dateparse import parse_datetime
+        from django.utils import timezone
         data = json.loads(request.body)
         event = Event.objects.get(id=event_id)
         event.name = data.get('name', event.name)
@@ -60,8 +70,18 @@ def admin_events(request, event_id=None):
         event.latitude = data.get('latitude', event.latitude)
         event.longitude = data.get('longitude', event.longitude)
         event.radius = data.get('radius', event.radius)
-        event.start_time = data.get('start_time', event.start_time)
-        event.end_time = data.get('end_time', event.end_time)
+        if 'start_time' in data:
+            start_time = parse_datetime(data['start_time'])
+            if start_time and timezone.is_naive(start_time):
+                start_time = timezone.make_aware(start_time)
+            if start_time:
+                event.start_time = start_time
+        if 'end_time' in data:
+            end_time = parse_datetime(data['end_time'])
+            if end_time and timezone.is_naive(end_time):
+                end_time = timezone.make_aware(end_time)
+            if end_time:
+                event.end_time = end_time
         event.is_active = data.get('is_active', event.is_active)
         event.save()
         return JsonResponse({'message': 'Event updated'})

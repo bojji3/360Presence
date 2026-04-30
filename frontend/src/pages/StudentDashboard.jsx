@@ -166,8 +166,12 @@ export default function StudentDashboard() {
   useEffect(() => {
     loadData();
     loadAnnouncements();
-    const id = setInterval(loadAnnouncements, 15000);
-    return () => clearInterval(id);
+    const id1 = setInterval(loadAnnouncements, 15000);
+    const id2 = setInterval(loadData, 30000);
+    return () => {
+      clearInterval(id1);
+      clearInterval(id2);
+    };
   }, []);
 
   const loadData = async () => {
