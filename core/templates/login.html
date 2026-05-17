@@ -3,134 +3,261 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>360Presence - Student Login</title>
+    <title>360Presence — Student Login</title>
+    <link rel="icon" type="image/x-icon" href="/static/react/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --ground: #f4f3ef;
+            --ground-2: #eceae4;
+            --hair: #dcd9cf;
+            --hair-2: #c6c3b7;
+            --ink: #141412;
+            --ink-2: #2a2a26;
+            --muted: #7a766d;
+            --muted-2: #a9a59a;
+            --sans: 'Hanken Grotesk', -apple-system, system-ui, sans-serif;
+            --inter: 'Inter', -apple-system, system-ui, sans-serif;
         }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: var(--sans);
+            background: var(--ground);
+            color: var(--ink);
             min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .page {
+            flex: 1;
+            display: flex;
             align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
         }
-        .container {
+
+        .card {
+            width: 100%;
+            max-width: 440px;
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
-            width: 400px;
-            animation: slideUp 0.5s ease-out;
+            border: 1px solid var(--hair);
+            border-radius: 16px;
+            padding: 48px 40px;
+            animation: fadeUp 0.5s ease-out;
         }
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        h1 {
+
+        .brand {
             text-align: center;
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 28px;
+            margin-bottom: 36px;
         }
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-        .logo {
-            text-align: center;
-            font-size: 50px;
+
+        .brand svg {
             margin-bottom: 20px;
         }
+
+        .brand h1 {
+            font-family: var(--sans);
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+        }
+
+        .brand p {
+            font-family: var(--inter);
+            font-size: 15px;
+            color: var(--muted);
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-family: var(--inter);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ink);
+            margin-bottom: 8px;
+        }
+
         input {
             width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            padding: 14px 16px;
+            font-family: var(--inter);
             font-size: 16px;
-            transition: all 0.3s;
+            border: 1.5px solid var(--hair);
+            border-radius: 10px;
+            background: var(--ground);
+            color: var(--ink);
+            transition: all 0.2s ease;
         }
+
         input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 5px rgba(102,126,234,0.3);
+            border-color: var(--ink);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(20, 20, 18, 0.08);
         }
-        button {
+
+        input::placeholder {
+            color: var(--muted-2);
+        }
+
+        .btn {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
+            padding: 16px;
+            font-family: var(--inter);
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 600;
+            background: var(--ink);
+            color: var(--ground);
+            border: none;
+            border-radius: 10px;
             cursor: pointer;
-            margin-top: 20px;
-            transition: transform 0.2s;
+            transition: all 0.2s ease;
+            margin-top: 8px;
         }
-        button:hover {
-            transform: translateY(-2px);
+
+        .btn:hover {
+            background: var(--ink-2);
+            transform: translateY(-1px);
         }
-        .register-link {
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .links {
+            margin-top: 28px;
             text-align: center;
-            margin-top: 20px;
-            color: #666;
+            font-family: var(--inter);
+            font-size: 14px;
+            color: var(--muted);
         }
-        .register-link a {
-            color: #667eea;
+
+        .links a {
+            color: var(--ink);
             text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px solid var(--hair-2);
+            transition: border-color 0.2s;
         }
-        .error {
-            background: #fee;
-            color: #c33;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            text-align: center;
-            font-size: 14px;
+
+        .links a:hover {
+            border-color: var(--ink);
         }
-        .success {
-            background: #efe;
-            color: #3c3;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            text-align: center;
+
+        .links .divider {
+            margin: 0 8px;
+            color: var(--hair-2);
+        }
+
+        .message {
+            margin-top: 16px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-family: var(--inter);
             font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+        }
+
+        .message.error {
+            display: block;
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .message.success {
+            display: block;
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 24px;
+            font-family: var(--inter);
+            font-size: 13px;
+            color: var(--muted-2);
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 36px 24px;
+                border-radius: 12px;
+                border: none;
+                background: transparent;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">📍</div>
-        <h1>360Presence</h1>
-        <div class="subtitle">Location-based Attendance System</div>
-        
-        <form id="loginForm">
-            <input type="text" id="username" placeholder="Username" required>
-            <input type="password" id="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
-        
-        <div class="register-link">
-            Don't have an account? <a href="/student-register/">Register here</a>
+    <div class="page">
+        <div class="card">
+            <div class="brand">
+                <svg width="56" height="56" viewBox="0 0 40 40" fill="none">
+                    <rect x="0.5" y="0.5" width="39" height="39" stroke="#141412" stroke-width="1.25"/>
+                    <circle cx="20" cy="20" r="12" stroke="#141412" stroke-width="1.25"/>
+                    <circle cx="20" cy="20" r="5" stroke="#141412" stroke-width="1.25"/>
+                    <circle cx="20" cy="20" r="1.5" fill="#141412"/>
+                    <line x1="20" y1="4" x2="20" y2="9" stroke="#141412" stroke-width="1.25"/>
+                    <line x1="20" y1="31" x2="20" y2="36" stroke="#141412" stroke-width="1.25"/>
+                    <line x1="4" y1="20" x2="9" y2="20" stroke="#141412" stroke-width="1.25"/>
+                    <line x1="31" y1="20" x2="36" y2="20" stroke="#141412" stroke-width="1.25"/>
+                </svg>
+                <h1>360Presence</h1>
+                <p>Student Login</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter your username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn" id="submitBtn">Sign In</button>
+            </form>
+
+            <div class="links">
+                <a href="/student-register/">Create account</a>
+                <span class="divider">·</span>
+                <a href="/admin-login/">Admin login</a>
+            </div>
+
+            <div id="message"></div>
         </div>
-        <div class="register-link" style="margin-top:8px;">
-            Event admin? <a href="/admin-login/">Admin login here</a>
-        </div>
-        <div id="message"></div>
+    </div>
+
+    <div class="footer">
+        © 2026 · The Presence Bureau
     </div>
 
     <script>
@@ -138,22 +265,44 @@
             e.preventDefault();
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            
-            const response = await fetch('/api/login/', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({username, password, role: 'student'})
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                document.getElementById('message').innerHTML = '<div class="success">✓ Login successful! Redirecting...</div>';
-                setTimeout(() => {
-                    window.location.href = data.redirect || '/student-dashboard/';
-                }, 1000);
-            } else {
-                document.getElementById('message').innerHTML = '<div class="error">✗ ' + data.error + '</div>';
+            const btn = document.getElementById('submitBtn');
+            const msg = document.getElementById('message');
+
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+            msg.className = 'message';
+            msg.textContent = '';
+
+            try {
+                const response = await fetch('/api/login/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, role: 'student' })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    localStorage.setItem('token', data.token || 'session-active');
+                    localStorage.setItem('user_type', data.user_type);
+                    localStorage.setItem('username', data.username);
+                    localStorage.setItem('full_name', data.full_name || data.username);
+                    localStorage.setItem('email', data.email || '');
+                    msg.className = 'message success';
+                    msg.textContent = 'Login successful! Redirecting...';
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/student-dashboard/';
+                    }, 800);
+                } else {
+                    msg.className = 'message error';
+                    msg.textContent = data.error || 'Login failed. Please try again.';
+                }
+            } catch (err) {
+                msg.className = 'message error';
+                msg.textContent = 'Connection error. Please ensure the server is running.';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
             }
         });
     </script>

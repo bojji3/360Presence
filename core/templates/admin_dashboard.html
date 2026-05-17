@@ -3,693 +3,839 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>360Presence — Admin Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <title>360Presence Admin</title>
+    <link rel="icon" type="image/x-icon" href="/static/react/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css" />
+    <script src="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.js"></script>
     <style>
+        :root {
+            --bg: #fafafa; --surface: #ffffff; --dark: #0a0a0a; --dark-2: #171717;
+            --border: #e5e5e5; --border-2: #d4d4d4;
+            --accent: #2563eb; --accent-hover: #1d4ed8; --accent-light: #eff6ff;
+            --green: #16a34a; --green-light: #f0fdf4;
+            --red: #dc2626; --red-light: #fef2f2;
+            --amber: #d97706; --amber-light: #fffbeb;
+            --text: #0a0a0a; --text-2: #525252; --text-3: #a3a3a3;
+            --radius: 12px; --radius-lg: 16px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.08);
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f0f2f5;
-            color: #1a1a2e;
-        }
-        .navbar {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: white;
-            padding: 1rem 2rem;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .nav-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .logo { display: flex; align-items: center; gap: 12px; }
-        .logo-icon {
-            width: 40px; height: 40px;
-            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-        }
-        .user-section { display: flex; align-items: center; gap: 20px; }
-        .logout-btn {
-            background: rgba(255,255,255,0.2);
-            padding: 8px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            color: white;
-            transition: all 0.3s;
-        }
-        .logout-btn:hover { background: rgba(255,255,255,0.3); }
-        .main-container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        .stat-card {
-            background: white;
-            border-radius: 20px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            transition: transform 0.3s;
-        }
-        .stat-card:hover { transform: translateY(-5px); }
-        .stat-icon { font-size: 2rem; margin-bottom: 1rem; }
-        .stat-value { font-size: 2rem; font-weight: 700; }
-        .stat-label { color: #666; margin-top: 0.5rem; }
-        
-        .tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid #e0e0e0;
-        }
-        .tab {
-            padding: 0.75rem 1.5rem;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-size: 1rem;
-            font-weight: 500;
-            color: #666;
-            transition: all 0.3s;
-        }
-        .tab.active {
-            color: #00b4db;
-            border-bottom: 2px solid #00b4db;
-            margin-bottom: -2px;
-        }
+        body { font-family: 'Geist', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+        .mono { font-family: 'Geist Mono', monospace; }
+
+        /* Sidebar */
+        .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 260px; background: var(--dark); color: #fff; z-index: 100; display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
+        .sidebar-header { padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 0.75rem; }
+        .sidebar-logo { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+        .sidebar-title { font-size: 1rem; font-weight: 600; letter-spacing: -0.02em; }
+        .sidebar-nav { flex: 1; padding: 1rem 0.75rem; }
+        .nav-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 8px; color: rgba(255,255,255,0.6); font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.15s; border: none; background: none; width: 100%; text-align: left; font-family: inherit; }
+        .nav-item:hover { background: rgba(255,255,255,0.06); color: #fff; }
+        .nav-item.active { background: var(--accent); color: #fff; }
+        .nav-item i { width: 18px; text-align: center; font-size: 0.875rem; }
+        .sidebar-footer { padding: 1rem 1.25rem; border-top: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-user { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+        .sidebar-avatar { width: 32px; height: 32px; background: rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; }
+        .sidebar-username { font-size: 0.8125rem; font-weight: 500; }
+        .logout-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1rem; border-radius: 8px; color: rgba(255,255,255,0.5); font-size: 0.8125rem; font-weight: 500; cursor: pointer; transition: all 0.15s; border: 1px solid rgba(255,255,255,0.1); background: none; width: 100%; text-align: left; font-family: inherit; text-decoration: none; }
+        .logout-btn:hover { background: rgba(255,255,255,0.06); color: #fff; border-color: rgba(255,255,255,0.15); }
+
+        /* Main */
+        .main { margin-left: 260px; min-height: 100vh; transition: margin 0.3s; }
+        .topbar { position: sticky; top: 0; z-index: 50; background: rgba(250,250,250,0.8); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0.875rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+        .topbar-left { display: flex; align-items: center; gap: 1rem; }
+        .hamburger { display: none; background: none; border: 1px solid var(--border); color: var(--text); width: 36px; height: 36px; border-radius: 8px; cursor: pointer; align-items: center; justify-content: center; font-size: 1rem; }
+        .page-title { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.02em; }
+        .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+        .content { padding: 2rem; max-width: 1280px; }
+
+        /* Stats */
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+        .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; transition: all 0.2s; }
+        .stat:hover { box-shadow: var(--shadow); border-color: var(--border-2); }
+        .stat-label { font-size: 0.75rem; font-weight: 500; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+        .stat-value { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+        .stat-sub { font-size: 0.75rem; color: var(--text-3); margin-top: 0.375rem; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 0.25rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px; width: fit-content; margin-bottom: 1.5rem; }
+        .tab { padding: 0.5rem 1rem; border-radius: 7px; font-size: 0.8125rem; font-weight: 500; color: var(--text-2); cursor: pointer; transition: all 0.15s; border: none; background: none; font-family: inherit; }
+        .tab:hover { color: var(--text); }
+        .tab.active { background: var(--dark); color: #fff; }
         .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        
-        .form-card {
-            background: white;
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        .tab-content.active { display: block; animation: fadeUp 0.3s ease; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Cards */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+        .card-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .card-title { font-size: 0.9375rem; font-weight: 600; letter-spacing: -0.01em; }
+        .card-body { padding: 1.5rem; }
+
+        /* Forms */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-label { display: block; font-size: 0.8125rem; font-weight: 500; color: var(--text-2); margin-bottom: 0.375rem; }
+        .form-input, .form-select, .form-textarea { width: 100%; padding: 0.625rem 0.875rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.875rem; font-family: inherit; background: var(--bg); transition: all 0.15s; }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+        .form-textarea { resize: vertical; min-height: 80px; }
+
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem; border-radius: 8px; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: all 0.15s; border: none; font-family: inherit; }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: var(--dark); color: #fff; }
+        .btn-primary:hover { background: var(--dark-2); }
+        .btn-accent { background: var(--accent); color: #fff; }
+        .btn-accent:hover { background: var(--accent-hover); }
+        .btn-ghost { background: transparent; color: var(--text-2); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: var(--bg); color: var(--text); }
+        .btn-danger { background: var(--red); color: #fff; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-warning { background: var(--amber); color: #fff; }
+        .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
+
+        /* Map */
+        .map-container { height: 360px; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+
+        /* Events */
+        .event-list { display: flex; flex-direction: column; }
+        .event-item { display: grid; grid-template-columns: 1fr auto; gap: 1rem; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); transition: background 0.15s; align-items: start; }
+        .event-item:hover { background: var(--bg); }
+        .event-item:last-child { border-bottom: none; }
+        .event-name { font-size: 0.9375rem; font-weight: 600; margin-bottom: 0.375rem; }
+        .event-meta { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.8125rem; color: var(--text-2); }
+        .event-meta-item { display: flex; align-items: center; gap: 0.375rem; }
+        .event-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+
+        /* Badges */
+        .badge { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 999px; font-size: 0.6875rem; font-weight: 600; text-transform: capitalize; }
+        .badge-active { background: var(--green-light); color: var(--green); }
+        .badge-inactive { background: #f5f5f5; color: var(--text-3); }
+        .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        .badge-dot.active { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .cat-badge { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.625rem; border-radius: 6px; font-size: 0.6875rem; font-weight: 600; text-transform: capitalize; background: #f5f5f5; color: var(--text-2); }
+
+        /* Filters */
+        .filter-bar { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 0.75rem; align-items: end; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); }
+        .filter-label { font-size: 0.6875rem; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
+
+        /* Table */
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 0.75rem 1.5rem; font-size: 0.6875rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; background: var(--bg); border-bottom: 1px solid var(--border); }
+        td { padding: 0.875rem 1.5rem; font-size: 0.875rem; border-bottom: 1px solid var(--border); }
+        tr:last-child td { border-bottom: none; }
+        .row-event { background: var(--accent-light); }
+        .row-event td { font-weight: 600; color: var(--accent); font-size: 0.8125rem; }
+
+        /* Students */
+        .student-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1.5rem; border-bottom: 1px solid var(--border); }
+        .student-item:last-child { border-bottom: none; }
+        .student-avatar { width: 36px; height: 36px; background: var(--accent-light); color: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; }
+        .student-name { font-size: 0.875rem; font-weight: 500; }
+        .student-status { font-size: 0.75rem; color: var(--text-2); }
+
+        /* Announcement */
+        .announce-banner { background: linear-gradient(135deg, var(--red) 0%, #ea580c 100%); color: #fff; padding: 1rem 1.25rem; border-radius: var(--radius); margin-bottom: 1.5rem; display: none; align-items: center; justify-content: space-between; }
+        .announce-close { background: none; border: none; color: rgba(255,255,255,0.7); font-size: 1.25rem; cursor: pointer; padding: 0.25rem; }
+        .announce-close:hover { color: #fff; }
+
+        /* Empty/Loading */
+        .empty { text-align: center; padding: 3rem 1.5rem; color: var(--text-3); }
+        .empty i { font-size: 2rem; margin-bottom: 0.75rem; opacity: 0.4; }
+        .empty h3 { font-size: 0.9375rem; font-weight: 600; color: var(--text-2); margin-bottom: 0.25rem; }
+        .empty p { font-size: 0.8125rem; }
+        .spinner-box { display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 3rem; color: var(--text-3); font-size: 0.875rem; }
+        .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Mobile */
+        .mobile-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99; opacity: 0; visibility: hidden; transition: all 0.3s; }
+        .mobile-overlay.active { opacity: 1; visibility: visible; }
+        .mobile-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--dark); z-index: 50; padding: 0.5rem 0; }
+        .mobile-nav-items { display: flex; justify-content: space-around; }
+        .mobile-nav-btn { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.5rem; color: rgba(255,255,255,0.5); font-size: 0.625rem; font-weight: 500; cursor: pointer; border: none; background: none; font-family: inherit; }
+        .mobile-nav-btn i { font-size: 1.125rem; }
+        .mobile-nav-btn.active { color: var(--accent); }
+
+        @media (max-width: 1024px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            .form-grid { grid-template-columns: 1fr; }
         }
-        .form-group { margin-bottom: 1.5rem; }
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #333;
-        }
-        input, textarea, select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-family: inherit;
-        }
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #00b4db;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,180,219,0.3); }
-        .btn-danger {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            color: white;
-        }
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        
-        #eventMap {
-            height: 400px;
-            border-radius: 15px;
-            margin-bottom: 1rem;
-        }
-        
-        .events-list {
-            display: grid;
-            gap: 1rem;
-        }
-        .event-item {
-            background: white;
-            border-radius: 15px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .event-info h3 { margin-bottom: 0.5rem; }
-        .event-info p { color: #666; font-size: 0.9rem; margin: 0.25rem 0; }
-        .event-actions { display: flex; gap: 0.5rem; }
-        .event-actions button {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.85rem;
-        }
-        
-        .attendance-table {
-            width: 100%;
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .attendance-table th, .attendance-table td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .attendance-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-        }
-        
-        .announcement-banner {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-            color: white;
-            padding: 1rem;
-            border-radius: 15px;
-            margin-bottom: 1rem;
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .online-dot {
-            width: 10px;
-            height: 10px;
-            background: #28a745;
-            border-radius: 50%;
-            display: inline-block;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-        
-        #monitorMap {
-            height: 400px;
-            border-radius: 15px;
-            margin-bottom: 1rem;
-        }
-        
         @media (max-width: 768px) {
-            .main-container { padding: 0 1rem; }
-            .event-item { flex-direction: column; gap: 1rem; }
-            .stats-grid { grid-template-columns: 1fr; }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; }
+            .hamburger { display: flex; }
+            .topbar { padding: 0.75rem 1rem; }
+            .content { padding: 1rem; }
+            .stats { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+            .filter-bar { grid-template-columns: 1fr 1fr; }
+            .event-item { grid-template-columns: 1fr; }
+            .event-actions { width: 100%; }
+            .event-actions .btn { flex: 1; justify-content: center; }
+            .mobile-nav { display: block; }
+            .content { padding-bottom: 5rem; }
+            .tabs { width: 100%; overflow-x: auto; }
+            .map-container { height: 280px; }
+        }
+        @media (max-width: 480px) {
+            .stats { grid-template-columns: 1fr; }
+            .filter-bar { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo">
-                <div class="logo-icon">📍</div>
-                <h1>360Presence Admin</h1>
-            </div>
-            <div class="user-section">
-                <span id="adminName"><i class="fas fa-user-shield"></i> Admin</span>
-                <a href="/logout/" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-            </div>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo"><i class="fas fa-location-dot"></i></div>
+            <span class="sidebar-title">360Presence</span>
         </div>
-    </nav>
-
-    <div class="main-container">
-        <div class="stats-grid" id="statsGrid"></div>
-
-        <div class="tabs">
-            <button type="button" class="tab active" data-tab="events">📅 Manage Events</button>
-            <button type="button" class="tab" data-tab="monitor">📡 Live Monitoring</button>
-            <button type="button" class="tab" data-tab="records">📊 Attendance Records</button>
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-tab="events" onclick="switchTab('events')"><i class="fas fa-calendar"></i> Events</button>
+            <button class="nav-item" data-tab="monitor" onclick="switchTab('monitor')"><i class="fas fa-satellite-dish"></i> Live Monitor</button>
+            <button class="nav-item" data-tab="records" onclick="switchTab('records')"><i class="fas fa-table"></i> Attendance</button>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar" id="sidebarAvatar">A</div>
+                <span class="sidebar-username mono" id="sidebarUser">admin</span>
+            </div>
+            <a href="/logout/" class="logout-btn"><i class="fas fa-arrow-right-from-bracket"></i> Sign out</a>
         </div>
+    </aside>
 
-        <!-- Events Tab -->
-        <div id="events-tab" class="tab-content active">
-            <div class="form-card">
-                <h2 id="eventFormTitle">Create New Event</h2>
-                <form id="eventForm">
-                    <input type="hidden" id="eventId" value="">
-                    <div class="form-group">
-                        <label>Event Name</label>
-                        <input type="text" id="eventName" required placeholder="e.g., University Symposium 2024">
+    <!-- Mobile overlay -->
+    <div class="mobile-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+    <!-- Main -->
+    <div class="main">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="hamburger" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <h1 class="page-title" id="pageTitle">Events</h1>
+            </div>
+            <div class="topbar-right">
+                <span class="mono" style="font-size:0.75rem;color:var(--text-3)" id="clock"></span>
+            </div>
+        </header>
+
+        <div class="content">
+            <!-- Stats -->
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Total Events</div>
+                    <div class="stat-value mono" id="statTotal">--</div>
+                    <div class="stat-sub">All time</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Active</div>
+                    <div class="stat-value mono" style="color:var(--green)" id="statActive">--</div>
+                    <div class="stat-sub">Currently live</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Students Online</div>
+                    <div class="stat-value mono" id="statStudents">--</div>
+                    <div class="stat-sub">Last 60 min</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Attendance</div>
+                    <div class="stat-value mono" id="statAttendance">--</div>
+                    <div class="stat-sub">Total records</div>
+                </div>
+            </div>
+
+            <!-- Tabs (desktop) -->
+            <div class="tabs">
+                <button class="tab active" data-tab="events" onclick="switchTab('events')">Events</button>
+                <button class="tab" data-tab="monitor" onclick="switchTab('monitor')">Live Monitor</button>
+                <button class="tab" data-tab="records" onclick="switchTab('records')">Attendance</button>
+            </div>
+
+            <!-- EVENTS TAB -->
+            <div id="tab-events" class="tab-content active">
+                <div class="card" style="margin-bottom:1.5rem">
+                    <div class="card-header">
+                        <span class="card-title" id="formTitle">Create Event</span>
                     </div>
-                    <div class="form-group">
-                        <label>Description</label>
-                        <textarea id="eventDesc" rows="3" placeholder="Event description..."></textarea>
+                    <div class="card-body">
+                        <form id="eventForm">
+                            <input type="hidden" id="eventId">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Event Name</label>
+                                    <input class="form-input" id="eventName" required placeholder="e.g. University Symposium">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Category</label>
+                                    <select class="form-select" id="eventCategory">
+                                        <option value="seminar">Seminar</option>
+                                        <option value="workshop">Workshop</option>
+                                        <option value="conference">Conference</option>
+                                        <option value="orientation">Orientation</option>
+                                        <option value="exam">Exam</option>
+                                        <option value="meeting">Meeting</option>
+                                        <option value="other" selected>Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-textarea" id="eventDesc" placeholder="Brief description..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Location</label>
+                                <div id="eventMap" class="map-container" style="margin-bottom:0.75rem"></div>
+                                <div class="form-grid">
+                                    <input class="form-input" id="eventLat" placeholder="Latitude" readonly>
+                                    <input class="form-input" id="eventLng" placeholder="Longitude" readonly>
+                                </div>
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Radius (m)</label>
+                                    <input class="form-input" type="number" id="eventRadius" value="100" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Start</label>
+                                    <input class="form-input" type="datetime-local" id="eventStart" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">End</label>
+                                <input class="form-input" type="datetime-local" id="eventEnd" required>
+                            </div>
+                            <div style="display:flex;gap:0.5rem">
+                                <button type="submit" class="btn btn-primary" id="submitBtn">Create Event</button>
+                                <button type="button" class="btn btn-ghost" id="cancelBtn" style="display:none" onclick="resetForm()">Cancel</button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="form-group">
-                        <label>Event Location (Click on map to set)</label>
-                        <div id="eventMap"></div>
-                        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
-                            <input type="text" id="eventLat" placeholder="Latitude" readonly>
-                            <input type="text" id="eventLng" placeholder="Longitude" readonly>
+                </div>
+
+                <div class="card">
+                    <div class="filter-bar">
+                        <div>
+                            <div class="filter-label">Search</div>
+                            <input class="form-input" id="fSearch" placeholder="Event name..." style="padding:0.5rem 0.75rem;font-size:0.8125rem">
+                        </div>
+                        <div>
+                            <div class="filter-label">Category</div>
+                            <select class="form-select" id="fCat" style="padding:0.5rem 0.75rem;font-size:0.8125rem">
+                                <option value="">All</option>
+                                <option value="seminar">Seminar</option><option value="workshop">Workshop</option>
+                                <option value="conference">Conference</option><option value="orientation">Orientation</option>
+                                <option value="exam">Exam</option><option value="meeting">Meeting</option><option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="filter-label">Status</div>
+                            <select class="form-select" id="fStatus" style="padding:0.5rem 0.75rem;font-size:0.8125rem">
+                                <option value="">All</option><option value="active">Active</option><option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="filter-label">Date</div>
+                            <select class="form-select" id="fDate" style="padding:0.5rem 0.75rem;font-size:0.8125rem">
+                                <option value="">All</option><option value="today">Today</option><option value="week">This Week</option>
+                                <option value="month">This Month</option><option value="upcoming">Upcoming</option><option value="past">Past</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-ghost btn-sm" onclick="clearFilters()" style="height:34px"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="event-list" id="eventsContainer">
+                        <div class="spinner-box"><div class="spinner"></div>Loading events...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MONITOR TAB -->
+            <div id="tab-monitor" class="tab-content">
+                <div class="announce-banner" id="announceBanner">
+                    <span><i class="fas fa-bullhorn"></i> <span id="announceText"></span></span>
+                    <button class="announce-close" onclick="hideAnnounce()">&times;</button>
+                </div>
+                <div class="card" style="margin-bottom:1.5rem">
+                    <div class="card-header"><span class="card-title">Broadcast</span></div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <input class="form-input" id="announceMsg" placeholder="Type message...">
+                        </div>
+                        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+                            <button class="btn btn-accent" onclick="broadcast()"><i class="fas fa-paper-plane"></i> Broadcast</button>
+                            <button class="btn btn-warning" onclick="announceLeave()"><i class="fas fa-door-open"></i> Allow leave radius</button>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>Radius (meters)</label>
-                        <input type="number" id="eventRadius" value="100" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Start Date & Time</label>
-                        <input type="datetime-local" id="eventStart" required>
-                    </div>
-                    <div class="form-group">
-                        <label>End Date & Time</label>
-                        <input type="datetime-local" id="eventEnd" required>
-                    </div>
-                    <button type="submit" id="eventSubmitBtn" class="btn-primary">Create Event</button>
-                    <button type="button" id="cancelEdit" class="btn-secondary" style="display:none;">Cancel</button>
-                </form>
-            </div>
-
-            <h2>Your Events</h2>
-            <div class="events-list" id="eventsList"></div>
-        </div>
-
-        <!-- Live Monitoring Tab -->
-        <div id="monitor-tab" class="tab-content">
-            <div class="announcement-banner" id="announcementBanner">
-                <span><i class="fas fa-bullhorn"></i> <span id="announcementText"></span></span>
-                <button type="button" onclick="hideAnnouncement()" style="background:none; border:none; color:white; font-size:1.5rem;">&times;</button>
-            </div>
-            
-            <div class="form-card">
-                <h3>📢 Make Announcement</h3>
-                <div class="form-group">
-                    <input type="text" id="announcementMsg" placeholder="Type announcement message...">
                 </div>
-                <button type="button" onclick="makeAnnouncement()" class="btn-primary">Broadcast Announcement</button>
-                <button type="button" onclick="announceLeaveRadius()" class="btn-primary" style="background: #ff6b6b; margin-left: 10px;">📢 Announce: Students can leave radius</button>
-            </div>
-
-            <div class="form-card">
-                <h3>📍 Real-time Presence</h3>
-                <div id="monitorMap"></div>
-                <div id="liveStudentsList" style="margin-top: 1rem;"></div>
-            </div>
-        </div>
-
-        <!-- Attendance Records Tab -->
-        <div id="records-tab" class="tab-content">
-            <div class="form-card">
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                    <select id="exportEventSelect" style="flex:1;">
-                        <option value="">All Events</option>
-                    </select>
-                    <button type="button" onclick="exportAttendance()" class="btn-primary">
-                        <i class="fas fa-download"></i> Export to CSV
-                    </button>
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Live Presence Map</span>
+                        <div style="display:flex;gap:0.5rem;align-items:center">
+                            <select class="form-select" id="monitorEventSelect" style="width:auto;padding:0.5rem 0.75rem;font-size:0.8125rem">
+                                <option value="">All Events</option>
+                            </select>
+                            <span class="badge-dot" id="monitorCount" style="display:none"></span>
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding:0">
+                        <div id="monitorMap" class="map-container" style="border:none;border-radius:0"></div>
+                        <div id="studentList"></div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="attendance-table">
-                <table style="width:100%">
-                    <thead>
-                        <tr><th>Student Name</th><th>Event</th><th>Check In</th><th>Check Out</th><th>Duration</th></tr>
-                    </thead>
-                    <tbody id="attendanceRecordsBody"></tbody>
-                </table>
+
+            <!-- RECORDS TAB -->
+            <div id="tab-records" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Attendance Records</span>
+                        <div style="display:flex;gap:0.5rem;align-items:center">
+                            <select class="form-select" id="recordsFilter" style="width:auto;padding:0.5rem 0.75rem;font-size:0.8125rem">
+                                <option value="">All Events</option>
+                            </select>
+                            <select class="form-select" id="exportSelect" style="width:auto;padding:0.5rem 0.75rem;font-size:0.8125rem">
+                                <option value="">All Events</option>
+                            </select>
+                            <button class="btn btn-primary btn-sm" onclick="exportCSV()"><i class="fas fa-download"></i> Export</button>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Student</th><th>Event</th><th>Check In</th><th>Check Out</th><th>Duration</th></tr></thead>
+                            <tbody id="recordsBody">
+                                <tr><td colspan="5"><div class="spinner-box"><div class="spinner"></div>Loading...</div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Mobile bottom nav -->
+    <nav class="mobile-nav">
+        <div class="mobile-nav-items">
+            <button class="mobile-nav-btn active" data-tab="events" onclick="switchTab('events')"><i class="fas fa-calendar"></i><span>Events</span></button>
+            <button class="mobile-nav-btn" data-tab="monitor" onclick="switchTab('monitor')"><i class="fas fa-satellite-dish"></i><span>Monitor</span></button>
+            <button class="mobile-nav-btn" data-tab="records" onclick="switchTab('records')"><i class="fas fa-table"></i><span>Records</span></button>
+        </div>
+    </nav>
+
     <script>
-        let map = null;
-        let marker = null;
-        let circle = null;
-        let monitorMap = null;
-        let studentMarkers = {};
-        let updateInterval = null;
+        let map, marker, monitorMap, updateInterval, allEvents = [];
 
-        // Tab switching
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                tab.classList.add('active');
-                document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
-                if (tab.dataset.tab === 'monitor') startLiveMonitoring();
-                else if (tab.dataset.tab === 'records') loadAttendanceRecords();
+        // Clock
+        setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB'); }, 1000);
+
+        // Sidebar
+        function toggleSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('active'); }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('active'); }
+
+        // Tabs
+        function switchTab(tab) {
+            document.querySelectorAll('.tab, .nav-item, .mobile-nav-btn').forEach(el => {
+                el.classList.toggle('active', el.dataset.tab === tab);
             });
-        });
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            const titles = { events: 'Events', monitor: 'Live Monitor', records: 'Attendance' };
+            document.getElementById('pageTitle').textContent = titles[tab] || '';
+            closeSidebar();
+            if (tab === 'monitor') { startMonitor(); setTimeout(() => monitorMap?.resize(), 300); setTimeout(() => monitorMap?.resize(), 600); }
+            else if (tab === 'records') loadRecords();
+            else if (tab === 'events') setTimeout(() => map?.resize(), 150);
+        }
 
-        // Initialize map for event creation
+        // Event map
         function initMap() {
-            map = L.map('eventMap').setView([13.6245, 123.1869], 16);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-                subdomains: 'abcd'
-            }).addTo(map);
-            
-            map.on('click', (e) => {
-                const { lat, lng } = e.latlng;
+            map = new maplibregl.Map({ container: 'eventMap', style: { version: 8, sources: { c: { type: 'raster', tiles: ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'], tileSize: 256, attribution: 'OSM' } }, layers: [{ id: 'c', type: 'raster', source: 'c' }] }, center: [123.1869, 13.6245], zoom: 16 });
+            map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+            map.on('click', e => {
+                const { lat, lng } = e.lngLat;
                 document.getElementById('eventLat').value = lat.toFixed(6);
                 document.getElementById('eventLng').value = lng.toFixed(6);
-                
-                if (marker) map.removeLayer(marker);
-                marker = L.marker([lat, lng]).addTo(map);
-                if (circle) map.removeLayer(circle);
-                const radius = parseInt(document.getElementById('eventRadius').value);
-                circle = L.circle([lat, lng], { radius: radius, color: '#00b4db', fillOpacity: 0.1 }).addTo(map);
+                if (marker) marker.remove();
+                marker = new maplibregl.Marker({ color: '#2563eb' }).setLngLat([lng, lat]).addTo(map);
+                drawCircle();
             });
-            
-            document.getElementById('eventRadius').addEventListener('change', () => {
-                if (marker && circle) {
-                    const pos = marker.getLatLng();
-                    map.removeLayer(circle);
-                    circle = L.circle([pos.lat, pos.lng], { radius: parseInt(document.getElementById('eventRadius').value), color: '#00b4db', fillOpacity: 0.1 }).addTo(map);
-                }
-            });
+            document.getElementById('eventRadius').addEventListener('change', drawCircle);
         }
 
-        // Load events list
+        function drawCircle() {
+            if (!marker) return;
+            const { lng, lat } = marker.getLngLat();
+            const r = parseInt(document.getElementById('eventRadius').value);
+            if (map.getSource('ec')) { map.getSource('ec').setData({ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: { r } }); }
+            else {
+                map.addSource('ec', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: { r } } });
+                map.addLayer({ id: 'ec-fill', type: 'fill', source: 'ec', paint: { 'fill-color': '#2563eb', 'fill-opacity': 0.08 } });
+                map.addLayer({ id: 'ec-line', type: 'circle', source: 'ec', paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 0, ['*', ['get', 'r'], 0.000001], 20, ['*', ['get', 'r'], 0.0001]], 'circle-color': '#2563eb', 'circle-opacity': 0.5, 'circle-stroke-width': 1.5, 'circle-stroke-color': '#2563eb' } });
+            }
+        }
+
+        // Load events
         async function loadEvents() {
             try {
-                const response = await fetch('/api/admin/events/');
-                const events = await response.json();
-                const listDiv = document.getElementById('eventsList');
-                
-                if (events.length === 0) {
-                    listDiv.innerHTML = '<div class="form-card" style="text-align: center;">No events yet. Create your first event above!</div>';
-                } else {
-                    listDiv.innerHTML = events.map(e => `
-                        <div class="event-item">
-                            <div class="event-info">
-                                <h3>${e.name}</h3>
-                                <p>📍 ${e.latitude}, ${e.longitude} | 📏 ${e.radius}m</p>
-                                <p>🕐 ${new Date(e.start_time).toLocaleString()} - ${new Date(e.end_time).toLocaleString()}</p>
-                                <p>${e.is_active ? '✅ Active' : '❌ Inactive'}</p>
-                            </div>
-                            <div class="event-actions">
-                                <button type="button" onclick="editEvent(${e.id})" style="background:#00b4db; color:white;"><i class="fas fa-edit"></i> Edit</button>
-                                <button type="button" onclick="toggleEventStatus(${e.id}, ${!e.is_active})" style="background:#ffc107; color:#333;"><i class="fas fa-power-off"></i> ${e.is_active ? 'Deactivate' : 'Activate'}</button>
-                                <button type="button" onclick="deleteEvent(${e.id})" style="background:#dc3545; color:white;"><i class="fas fa-trash"></i> Delete</button>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-                
-                // Update stats
-                document.getElementById('statsGrid').innerHTML = `
-                    <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-value">${events.length}</div><div class="stat-label">Total Events</div></div>
-                    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value">${events.filter(e=>e.is_active).length}</div><div class="stat-label">Active Events</div></div>
-                `;
-            } catch(e) {
-                console.error('Error loading events:', e);
-            }
+                const r = await fetch('/api/admin/events/');
+                allEvents = await r.json();
+                renderEvents();
+                document.getElementById('statTotal').textContent = allEvents.length;
+                document.getElementById('statActive').textContent = allEvents.filter(e => e.is_active).length;
+            } catch (e) { document.getElementById('eventsContainer').innerHTML = '<div class="empty"><i class="fas fa-triangle-exclamation"></i><h3>Failed to load</h3></div>'; }
         }
 
-        // Create/Update event
-        document.getElementById('eventForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const eventId = document.getElementById('eventId').value;
-            const data = {
-                name: document.getElementById('eventName').value,
-                description: document.getElementById('eventDesc').value,
-                latitude: parseFloat(document.getElementById('eventLat').value),
-                longitude: parseFloat(document.getElementById('eventLng').value),
-                radius: parseInt(document.getElementById('eventRadius').value),
-                start_time: document.getElementById('eventStart').value,
-                end_time: document.getElementById('eventEnd').value
-            };
-            
-            const url = eventId ? `/api/admin/events/${eventId}/` : '/api/admin/events/';
-            const method = eventId ? 'PUT' : 'POST';
-            
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+        function renderEvents() {
+            const s = document.getElementById('fSearch').value.toLowerCase();
+            const c = document.getElementById('fCat').value;
+            const st = document.getElementById('fStatus').value;
+            const d = document.getElementById('fDate').value;
+            let f = allEvents.filter(e => {
+                if (s && !e.name.toLowerCase().includes(s)) return false;
+                if (c && e.category !== c) return false;
+                if (st === 'active' && !e.is_active) return false;
+                if (st === 'inactive' && e.is_active) return false;
+                if (d) {
+                    const ev = new Date(e.start_time), now = new Date(), today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    if (d === 'today' && (ev < today || ev >= new Date(today.getTime() + 864e5))) return false;
+                    if (d === 'week' && (ev < today || ev >= new Date(today.getTime() + 7 * 864e5))) return false;
+                    if (d === 'month' && (ev < today || ev > new Date(now.getFullYear(), now.getMonth() + 1, 0))) return false;
+                    if (d === 'upcoming' && ev < now) return false;
+                    if (d === 'past' && ev >= now) return false;
+                }
+                return true;
             });
-            
-            if (response.ok) {
-                alert(eventId ? 'Event updated!' : 'Event created!');
-                resetForm();
-                loadEvents();
-            } else {
-                alert('Error saving event');
+            f.sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+            const g = {};
+            f.forEach(e => { const k = new Date(e.start_time).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); (g[k] = g[k] || []).push(e); });
+            const el = document.getElementById('eventsContainer');
+            if (!f.length) { el.innerHTML = '<div class="empty"><i class="fas fa-calendar-xmark"></i><h3>No events found</h3><p>Adjust filters or create a new event</p></div>'; return; }
+            let h = '';
+            for (const [date, evts] of Object.entries(g)) {
+                h += `<div style="padding:0.75rem 1.5rem;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><span class="mono" style="font-size:0.75rem;font-weight:600;color:var(--text-2)">${date}</span><span class="mono" style="font-size:0.6875rem;color:var(--text-3)">${evts.length} event${evts.length > 1 ? 's' : ''}</span></div>`;
+                h += evts.map(e => `
+                    <div class="event-item">
+                        <div>
+                            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.375rem"><span class="event-name">${e.name}</span><span class="cat-badge">${e.category || 'other'}</span></div>
+                            <div class="event-meta">
+                                <span class="event-meta-item"><i class="fas fa-location-dot"></i> ${e.latitude.toFixed(4)}, ${e.longitude.toFixed(4)}</span>
+                                <span class="event-meta-item"><i class="fas fa-ruler"></i> ${e.radius}m</span>
+                                <span class="event-meta-item"><i class="fas fa-clock"></i> ${new Date(e.start_time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} - ${new Date(e.end_time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>
+                            </div>
+                        </div>
+                        <div class="event-actions">
+                            <span class="badge ${e.is_active ? 'badge-active' : 'badge-inactive'}"><span class="badge-dot ${e.is_active ? 'active' : ''}"></span>${e.is_active ? 'Active' : 'Inactive'}</span>
+                            <button class="btn btn-ghost btn-sm" onclick="editEvent(${e.id})"><i class="fas fa-pen"></i></button>
+                            <button class="btn btn-warning btn-sm" onclick="toggleStatus(${e.id}, ${!e.is_active})"><i class="fas fa-power-off"></i></button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteEvent(${e.id})"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>`).join('');
             }
+            el.innerHTML = h;
+        }
+
+        ['fSearch','fCat','fStatus','fDate'].forEach(id => document.getElementById(id).addEventListener('input', renderEvents));
+        document.getElementById('fCat').addEventListener('change', renderEvents);
+        document.getElementById('fStatus').addEventListener('change', renderEvents);
+        document.getElementById('fDate').addEventListener('change', renderEvents);
+        function clearFilters() { ['fSearch','fCat','fStatus','fDate'].forEach(id => document.getElementById(id).value = ''); renderEvents(); }
+
+        // Form
+        document.getElementById('eventForm').addEventListener('submit', async e => {
+            e.preventDefault();
+            const id = document.getElementById('eventId').value;
+            const data = { name: document.getElementById('eventName').value, description: document.getElementById('eventDesc').value, category: document.getElementById('eventCategory').value, latitude: parseFloat(document.getElementById('eventLat').value), longitude: parseFloat(document.getElementById('eventLng').value), radius: parseInt(document.getElementById('eventRadius').value), start_time: document.getElementById('eventStart').value, end_time: document.getElementById('eventEnd').value };
+            try {
+                const r = await fetch(id ? `/api/admin/events/${id}/` : '/api/admin/events/', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                if (r.ok) { resetForm(); loadEvents(); } else alert('Error saving');
+            } catch { alert('Error saving'); }
         });
 
         async function editEvent(id) {
             try {
                 const r = await fetch(`/api/admin/events/${id}/`);
-                if (!r.ok) { alert('Failed to load event'); return; }
-                const event = await r.json();
-
-                document.getElementById('eventFormTitle').innerText = 'Edit Event';
-                document.getElementById('eventSubmitBtn').innerText = 'Update Event';
-                document.getElementById('cancelEdit').style.display = 'inline-block';
-                document.getElementById('eventId').value = event.id;
-                document.getElementById('eventName').value = event.name;
-                document.getElementById('eventDesc').value = event.description || '';
-                document.getElementById('eventLat').value = event.latitude;
-                document.getElementById('eventLng').value = event.longitude;
-                document.getElementById('eventRadius').value = event.radius;
-                document.getElementById('eventStart').value = event.start_time.slice(0,16);
-                document.getElementById('eventEnd').value = event.end_time.slice(0,16);
-
-                if (marker) map.removeLayer(marker);
-                marker = L.marker([event.latitude, event.longitude]).addTo(map);
-                if (circle) map.removeLayer(circle);
-                circle = L.circle([event.latitude, event.longitude], { radius: event.radius, color: '#00b4db', fillOpacity: 0.1 }).addTo(map);
-                map.setView([event.latitude, event.longitude], 16);
-                setTimeout(() => map.invalidateSize(), 100);
-
-                document.getElementById('eventFormTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } catch (err) {
-                console.error(err);
-                alert('Failed to load event');
-            }
+                if (!r.ok) return;
+                const e = await r.json();
+                document.getElementById('formTitle').textContent = 'Edit Event';
+                document.getElementById('submitBtn').textContent = 'Update';
+                document.getElementById('cancelBtn').style.display = '';
+                document.getElementById('eventId').value = e.id;
+                document.getElementById('eventName').value = e.name;
+                document.getElementById('eventCategory').value = e.category || 'other';
+                document.getElementById('eventDesc').value = e.description || '';
+                document.getElementById('eventLat').value = e.latitude;
+                document.getElementById('eventLng').value = e.longitude;
+                document.getElementById('eventRadius').value = e.radius;
+                document.getElementById('eventStart').value = e.start_time.slice(0, 16);
+                document.getElementById('eventEnd').value = e.end_time.slice(0, 16);
+                if (marker) marker.remove();
+                marker = new maplibregl.Marker({ color: '#2563eb' }).setLngLat([e.longitude, e.latitude]).addTo(map);
+                drawCircle();
+                map.flyTo({ center: [e.longitude, e.latitude], zoom: 16 });
+                document.getElementById('formTitle').scrollIntoView({ behavior: 'smooth' });
+            } catch { alert('Failed to load'); }
         }
-        window.editEvent = editEvent;
 
         function resetForm() {
-            document.getElementById('eventFormTitle').innerText = 'Create New Event';
-            document.getElementById('eventSubmitBtn').innerText = 'Create Event';
-            document.getElementById('eventId').value = '';
-            document.getElementById('eventName').value = '';
+            ['eventId','eventName','eventLat','eventLng','eventStart','eventEnd'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('eventDesc').value = '';
-            document.getElementById('eventLat').value = '';
-            document.getElementById('eventLng').value = '';
+            document.getElementById('eventCategory').value = 'other';
             document.getElementById('eventRadius').value = '100';
-            document.getElementById('eventStart').value = '';
-            document.getElementById('eventEnd').value = '';
-            document.getElementById('cancelEdit').style.display = 'none';
-            if (marker) map.removeLayer(marker);
-            if (circle) map.removeLayer(circle);
+            document.getElementById('formTitle').textContent = 'Create Event';
+            document.getElementById('submitBtn').textContent = 'Create Event';
+            document.getElementById('cancelBtn').style.display = 'none';
+            if (marker) marker.remove();
+            if (map.getSource('ec')) { map.removeLayer('ec-fill'); map.removeLayer('ec-line'); map.removeSource('ec'); }
         }
 
-        document.getElementById('cancelEdit').onclick = resetForm;
+        async function toggleStatus(id, active) { await fetch(`/api/admin/events/${id}/`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_active: active }) }); loadEvents(); }
+        async function deleteEvent(id) { if (confirm('Delete this event?')) { await fetch(`/api/admin/events/${id}/`, { method: 'DELETE' }); loadEvents(); } }
 
-        async function toggleEventStatus(id, active) {
-            await fetch(`/api/admin/events/${id}/`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ is_active: active })
-            });
-            loadEvents();
-        }
+        // Monitor
+        let monitorEventsCache = [];
+        let monitorMarkers = [];
 
-        async function deleteEvent(id) {
-            if (confirm('Delete this event?')) {
-                await fetch(`/api/admin/events/${id}/`, { method: 'DELETE' });
-                loadEvents();
-            }
-        }
-
-        // Live monitoring
-        async function startLiveMonitoring() {
+        function startMonitor() {
             if (!monitorMap) {
-                monitorMap = L.map('monitorMap').setView([13.6245, 123.1869], 15);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; OSM',
-                    subdomains: 'abcd'
-                }).addTo(monitorMap);
+                monitorMap = new maplibregl.Map({
+                    container: 'monitorMap',
+                    style: {
+                        version: 8,
+                        sources: {
+                            c: { type: 'raster', tiles: ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'], tileSize: 256 }
+                        },
+                        layers: [{ id: 'c', type: 'raster', source: 'c' }]
+                    },
+                    center: [123.1869, 13.6245],
+                    zoom: 14
+                });
+                monitorMap.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+                monitorMap.on('load', () => { loadStudents(); });
             }
-            
+            setTimeout(() => { monitorMap.resize(); }, 200);
+            setTimeout(() => { monitorMap.resize(); }, 500);
             if (updateInterval) clearInterval(updateInterval);
-            updateInterval = setInterval(loadLiveStudents, 5000);
-            loadLiveStudents();
+            updateInterval = setInterval(loadStudents, 5000);
         }
 
-        async function loadLiveStudents() {
+        function createRadiusCircle(lat, lng, radiusMeters) {
+            const points = 64;
+            const R = 6378137;
+            const coords = [];
+            for (let i = 0; i < points; i++) {
+                const angle = (i * 360 / points) * Math.PI / 180;
+                const d = radiusMeters / R;
+                const lat1 = lat * Math.PI / 180;
+                const lng1 = lng * Math.PI / 180;
+                const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(angle));
+                const lng2 = lng1 + Math.atan2(Math.sin(angle) * Math.sin(d) * Math.cos(lat1), Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+                coords.push([lng2 * 180 / Math.PI, lat2 * 180 / Math.PI]);
+            }
+            coords.push(coords[0]);
+            return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [coords] } };
+        }
+
+        async function loadStudents() {
+            if (!monitorMap || !monitorMap.loaded()) return;
             try {
-                const response = await fetch('/api/admin/live-students/');
-                const data = await response.json();
-                
-                Object.values(studentMarkers).forEach(m => monitorMap.removeLayer(m));
-                studentMarkers = {};
-                
-                if (data.students && data.students.length > 0) {
-                    data.students.forEach(student => {
-                        if (student.latitude && student.longitude) {
-                            const marker = L.marker([student.latitude, student.longitude], {
-                                icon: L.divIcon({
-                                    html: `<div style="background: ${student.is_inside ? '#28a745' : '#dc3545'}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>`,
-                                    iconSize: [14, 14]
-                                })
-                            }).addTo(monitorMap);
-                            marker.bindPopup(`<b>${student.name}</b><br>${student.is_inside ? '✅ Inside radius' : '❌ Outside radius'}`);
-                            studentMarkers[student.id] = marker;
-                        }
+                const [sr, er] = await Promise.all([
+                    fetch('/api/admin/live-students/'),
+                    fetch('/api/admin/events/')
+                ]);
+                const d = await sr.json();
+                const events = await er.json();
+                monitorEventsCache = events || [];
+
+                // Populate event dropdown
+                const sel = document.getElementById('monitorEventSelect');
+                if (sel && sel.options.length <= 1) {
+                    const activeEvents = monitorEventsCache.filter(e => e.is_active);
+                    activeEvents.forEach(e => {
+                        const opt = document.createElement('option');
+                        opt.value = e.id;
+                        opt.textContent = e.name;
+                        sel.appendChild(opt);
                     });
                 }
-                
-                document.getElementById('liveStudentsList').innerHTML = `
-                    <h3>Currently Active Students (${data.students?.length || 0})</h3>
-                    ${data.students?.map(s => `
-                        <div class="event-item" style="margin-bottom:0.5rem; padding:1rem;">
-                            <div>
-                                <strong><i class="fas fa-user-graduate"></i> ${s.name}</strong><br>
-                                <small>${s.is_inside ? '✅ Inside event radius' : '❌ Outside event radius'}</small>
-                            </div>
-                            <span class="online-dot" style="background: ${s.is_inside ? '#28a745' : '#dc3545'};"></span>
-                        </div>
-                    `).join('') || '<div class="form-card" style="text-align: center;">No active students at the moment</div>'}
-                `;
-            } catch(e) {
-                console.error('Error loading live students:', e);
+
+                const selectedId = sel ? sel.value : '';
+                let filteredEvents = monitorEventsCache.filter(e => e.is_active && e.latitude && e.longitude);
+                let filteredStudents = (d.students || []).filter(s => s.latitude && s.longitude);
+
+                if (selectedId) {
+                    const ev = monitorEventsCache.find(e => String(e.id) === selectedId);
+                    if (ev) {
+                        filteredEvents = [ev];
+                        filteredStudents = filteredStudents.filter(s => s.is_inside);
+                    }
+                }
+
+                // Clear old markers
+                monitorMarkers.forEach(m => m.remove());
+                monitorMarkers = [];
+
+                // Clear old event sources
+                try {
+                    const activeSourceIds = new Set(filteredEvents.map(e => `ev_${e.id}`));
+                    const allSources = monitorMap.getStyle().sources || {};
+                    Object.keys(allSources).forEach(srcId => {
+                        if (srcId.startsWith('ev_') && !activeSourceIds.has(srcId)) {
+                            const eventId = srcId.replace('ev_', '');
+                            try {
+                                if (monitorMap.getLayer(`ev_line_${eventId}`)) monitorMap.removeLayer(`ev_line_${eventId}`);
+                                if (monitorMap.getLayer(`ev_fill_${eventId}`)) monitorMap.removeLayer(`ev_fill_${eventId}`);
+                                monitorMap.removeSource(srcId);
+                            } catch {}
+                        }
+                    });
+                } catch {}
+
+                // Draw event circles and center markers
+                filteredEvents.forEach(ev => {
+                    const circle = createRadiusCircle(ev.latitude, ev.longitude, ev.radius);
+                    const sourceId = `ev_${ev.id}`;
+                    try {
+                        if (!monitorMap.getSource(sourceId)) {
+                            monitorMap.addSource(sourceId, { type: 'geojson', data: circle });
+                            monitorMap.addLayer({
+                                id: `ev_line_${ev.id}`,
+                                type: 'line',
+                                source: sourceId,
+                                paint: { 'line-color': '#8b5cf6', 'line-width': 2, 'line-opacity': 0.5 }
+                            });
+                            monitorMap.addLayer({
+                                id: `ev_fill_${ev.id}`,
+                                type: 'fill',
+                                source: sourceId,
+                                paint: { 'fill-color': '#8b5cf6', 'fill-opacity': 0.08 }
+                            });
+                        } else {
+                            monitorMap.getSource(sourceId).setData(circle);
+                        }
+                    } catch {}
+
+                    // Event center marker (purple)
+                    const centerEl = document.createElement('div');
+                    centerEl.style.cssText = 'width:16px;height:16px;border-radius:50%;background:#8b5cf6;border:3px solid #fff;box-shadow:0 2px 8px rgba(139,92,246,0.5);';
+                    const centerMarker = new maplibregl.Marker({ element: centerEl })
+                        .setLngLat([ev.longitude, ev.latitude])
+                        .setPopup(new maplibregl.Popup().setHTML(`<b>${ev.name}</b><br>Radius: ${ev.radius}m`))
+                        .addTo(monitorMap);
+                    monitorMarkers.push(centerMarker);
+                });
+
+                // Draw student dots (blue)
+                filteredStudents.forEach(s => {
+                    const el = document.createElement('div');
+                    el.style.cssText = 'width:12px;height:12px;border-radius:50%;background:#3b82f6;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.25);';
+                    const marker = new maplibregl.Marker({ element: el })
+                        .setLngLat([s.longitude, s.latitude])
+                        .setPopup(new maplibregl.Popup().setHTML(`<b>${s.name}</b>`))
+                        .addTo(monitorMap);
+                    monitorMarkers.push(marker);
+                });
+
+                // Fit map
+                const allCoords = [
+                    ...filteredEvents.map(e => [e.longitude, e.latitude]),
+                    ...filteredStudents.map(s => [s.longitude, s.latitude])
+                ];
+                if (allCoords.length > 0) {
+                    const bounds = new maplibregl.LngLatBounds();
+                    allCoords.forEach(c => bounds.extend(c));
+                    monitorMap.fitBounds(bounds, { padding: 50, duration: 400, maxZoom: 16 });
+                }
+
+                // Update UI
+                const badge = document.getElementById('monitorCount');
+                if (badge) {
+                    if (filteredStudents.length > 0) {
+                        badge.style.display = 'inline-block';
+                        badge.textContent = `${filteredStudents.length} student${filteredStudents.length !== 1 ? 's' : ''}`;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+                document.getElementById('statStudents').textContent = filteredStudents.length;
+                const sl = document.getElementById('studentList');
+                if (!filteredStudents.length) {
+                    sl.innerHTML = '<div class="empty"><i class="fas fa-user-graduate"></i><h3>No students in this event</h3></div>';
+                } else {
+                    sl.innerHTML = filteredStudents.map(s => {
+                        const ini = s.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                        const statusText = s.is_inside ? 'Inside radius' : 'Outside radius';
+                        const dotColor = s.is_inside ? '#16a34a' : '#dc2626';
+                        return `<div class="student-item"><div class="student-avatar">${ini}</div><div><div class="student-name">${s.name}</div><div class="student-status">${statusText}</div></div><span class="badge-dot" style="background:${dotColor}"></span></div>`;
+                    }).join('');
+                }
+            } catch (err) {
+                console.error('loadStudents error:', err);
             }
         }
+
+        // Event filter change handler
+        document.addEventListener('DOMContentLoaded', () => {
+            const sel = document.getElementById('monitorEventSelect');
+            if (sel) sel.addEventListener('change', () => { loadStudents(); });
+        });
 
         // Announcements
-        async function broadcast(msg) {
-            const r = await fetch('/api/admin/announce/', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ message: msg })
-            });
-            if (r.ok) { showAnnouncement(msg); }
-            else { alert('Failed to broadcast announcement'); }
-        }
+        async function broadcast() { const m = document.getElementById('announceMsg').value.trim(); if (!m) return; const r = await fetch('/api/admin/announce/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: m }) }); if (r.ok) { showAnnounce(m); document.getElementById('announceMsg').value = ''; } else alert('Failed'); }
+        function announceLeave() { broadcast("Students may now leave the event radius."); }
+        function showAnnounce(m) { document.getElementById('announceText').textContent = m; document.getElementById('announceBanner').style.display = 'flex'; setTimeout(hideAnnounce, 10000); }
+        function hideAnnounce() { document.getElementById('announceBanner').style.display = 'none'; }
 
-        function makeAnnouncement() {
-            const msg = document.getElementById('announcementMsg').value.trim();
-            if (msg) {
-                broadcast(msg);
-                document.getElementById('announcementMsg').value = '';
-            }
-        }
-
-        function announceLeaveRadius() {
-            broadcast("📢 ANNOUNCEMENT: Students may now leave the event radius. Thank you for your participation!");
-        }
-
-        function showAnnouncement(msg) {
-            document.getElementById('announcementText').innerText = msg;
-            document.getElementById('announcementBanner').style.display = 'flex';
-            setTimeout(() => hideAnnouncement(), 10000);
-        }
-
-        function hideAnnouncement() {
-            document.getElementById('announcementBanner').style.display = 'none';
-        }
-
-        // Attendance records with sorting
-        async function loadAttendanceRecords() {
+        // Records
+        async function loadRecords() {
             try {
-                const response = await fetch('/api/admin/attendance/');
-                let records = await response.json();
-                
-                if (!records || records.length === 0) {
-                    document.getElementById('attendanceRecordsBody').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">No attendance records found</td></tr>';
-                    return;
-                }
-                
-                const groupedByEvent = {};
-                records.forEach(record => {
-                    if (!groupedByEvent[record.event_name]) {
-                        groupedByEvent[record.event_name] = [];
-                    }
-                    groupedByEvent[record.event_name].push(record);
-                });
-                
-                const sortedEvents = Object.keys(groupedByEvent).sort((a, b) => {
-                    const eventA = groupedByEvent[a][0];
-                    const eventB = groupedByEvent[b][0];
-                    return (eventB.event_start || '').localeCompare(eventA.event_start || '');
-                });
-                
-                const events = [...new Set(records.map(r => r.event_name))];
-                events.sort();
-                const exportSelect = document.getElementById('exportEventSelect');
-                if (exportSelect) {
-                    exportSelect.innerHTML = '<option value="">All Events</option>' + events.map(e => `<option value="${e}">${e}</option>`).join('');
-                }
-                
-                let html = '';
-                for (const eventName of sortedEvents) {
-                    const eventRecords = groupedByEvent[eventName];
-                    eventRecords.sort((a, b) => (b.check_in || '').localeCompare(a.check_in || ''));
-                    
-                    html += `<tr style="background: #e8f4f8;"><td colspan="5" style="padding: 12px; font-weight: bold; font-size: 1.1rem;">📅 ${eventName}</td></tr>`;
-                    html += eventRecords.map(r => `
-                        <tr>
-                            <td style="padding-left: 2rem;">👤 ${r.student_name}</td>
-                            <td>${r.event_name}</td>
-                            <td>${r.check_in || '-'}</td>
-                            <td>${r.check_out || '-'}</td>
-                            <td>${r.duration || '-'}</td>
-                        </tr>
-                    `).join('');
-                }
-                
-                document.getElementById('attendanceRecordsBody').innerHTML = html;
-            } catch(e) {
-                console.error('Error loading attendance:', e);
-                document.getElementById('attendanceRecordsBody').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">Error loading records</td></tr>';
+                const [recRes, evtRes] = await Promise.all([
+                    fetch('/api/admin/attendance/'),
+                    fetch('/api/admin/events/')
+                ]);
+                const recs = await recRes.json();
+                const allEvents = await evtRes.json();
+                document.getElementById('statAttendance').textContent = recs.length;
+                const evtOptions = '<option value="">All Events</option>' + allEvents.map(e => `<option value="${e.name}">${e.name}</option>`).join('');
+                document.getElementById('recordsFilter').innerHTML = evtOptions;
+                document.getElementById('exportSelect').innerHTML = evtOptions;
+                document.getElementById('recordsFilter').onchange = () => renderRecords(recs, document.getElementById('recordsFilter').value);
+                renderRecords(recs, '');
+            } catch { document.getElementById('recordsBody').innerHTML = '<tr><td colspan="5"><div class="empty"><i class="fas fa-triangle-exclamation"></i><h3>Failed to load</h3></div></td></tr>'; }
+        }
+
+        function renderRecords(recs, filterEvent) {
+            const filtered = filterEvent ? recs.filter(r => r.event_name === filterEvent) : recs;
+            if (!filtered.length) { document.getElementById('recordsBody').innerHTML = '<tr><td colspan="5"><div class="empty"><i class="fas fa-clipboard-list"></i><h3>No records</h3></div></td></tr>'; return; }
+            const g = {};
+            filtered.forEach(r => { (g[r.event_name] = g[r.event_name] || []).push(r); });
+            let h = '';
+            for (const [name, rows] of Object.entries(g)) {
+                h += `<tr class="row-event"><td colspan="5"><i class="fas fa-calendar"></i> ${name}</td></tr>`;
+                h += rows.map(r => `<tr><td>${r.student_name}</td><td class="mono" style="font-size:0.75rem;color:var(--text-3)">${r.event_name}</td><td class="mono" style="font-size:0.75rem">${r.check_in || '-'}</td><td class="mono" style="font-size:0.75rem">${r.check_out || '-'}</td><td class="mono" style="font-size:0.75rem">${r.duration || '-'}</td></tr>`).join('');
             }
+            document.getElementById('recordsBody').innerHTML = h;
         }
 
-        async function exportAttendance() {
-            const eventName = document.getElementById('exportEventSelect').value;
-            window.location.href = `/api/admin/export/?event=${encodeURIComponent(eventName)}`;
-        }
+        function exportCSV() { const e = document.getElementById('exportSelect').value; window.location.href = `/api/admin/export/?event=${encodeURIComponent(e)}`; }
 
-        // Load admin info
+        // Admin info
         async function loadAdmin() {
             try {
-                const response = await fetch('/api/user/');
-                const data = await response.json();
-                document.getElementById('adminName').innerHTML = `<i class="fas fa-user-shield"></i> ${data.username}`;
-            } catch(e) {
-                console.error('Error loading admin:', e);
-            }
+                const r = await fetch('/api/user/');
+                const d = await r.json();
+                document.getElementById('sidebarUser').textContent = d.username;
+                document.getElementById('sidebarAvatar').textContent = d.username[0].toUpperCase();
+            } catch {}
         }
 
-        // Initialize everything
-        initMap();
-        loadEvents();
-        loadAdmin();
+        // Init
+        initMap(); loadEvents(); loadAdmin();
+        window.addEventListener('resize', () => { map?.resize(); monitorMap?.resize(); });
     </script>
 </body>
 </html>

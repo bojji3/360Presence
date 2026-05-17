@@ -17,6 +17,7 @@ def admin_events(request, event_id=None):
                 'id': event.id,
                 'name': event.name,
                 'description': event.description,
+                'category': event.category,
                 'latitude': event.latitude,
                 'longitude': event.longitude,
                 'radius': event.radius,
@@ -29,6 +30,8 @@ def admin_events(request, event_id=None):
             return JsonResponse([{
                 'id': e.id,
                 'name': e.name,
+                'description': e.description,
+                'category': e.category,
                 'latitude': e.latitude,
                 'longitude': e.longitude,
                 'radius': e.radius,
@@ -50,6 +53,7 @@ def admin_events(request, event_id=None):
         event = Event.objects.create(
             name=data['name'],
             description=data.get('description', ''),
+            category=data.get('category', 'other'),
             latitude=data['latitude'],
             longitude=data['longitude'],
             radius=data['radius'],
@@ -67,6 +71,7 @@ def admin_events(request, event_id=None):
         event = Event.objects.get(id=event_id)
         event.name = data.get('name', event.name)
         event.description = data.get('description', event.description)
+        event.category = data.get('category', event.category)
         event.latitude = data.get('latitude', event.latitude)
         event.longitude = data.get('longitude', event.longitude)
         event.radius = data.get('radius', event.radius)
@@ -95,6 +100,7 @@ def live_students(request):
     from math import radians, sin, cos, sqrt, atan2
     from django.utils import timezone
     from datetime import timedelta
+    from .models import Attendance
 
     def haversine_m(lat1, lon1, lat2, lon2):
         R = 6371000
@@ -105,37 +111,57 @@ def live_students(request):
         return R * 2 * atan2(sqrt(a), sqrt(1-a))
 
     now = timezone.now()
-    active_events = list(Event.objects.filter(is_active=True, start_time__lte=now, end_time__gte=now))
-    recent_cutoff = now - timedelta(minutes=5)
+    active_events = list(Event.objects.filter(is_active=True))
+    recent_cutoff = now - timedelta(minutes=60)
 
-    students = User.objects.filter(
+    # Get students with recent location updates (exclude staff)
+    students_recent = User.objects.filter(
         user_type='student',
+        is_staff=False,
         last_latitude__isnull=False,
         last_longitude__isnull=False,
         last_location_update__gte=recent_cutoff,
     )
 
+    # Also get students who are checked in to active events (have open attendance)
+    checked_in_student_ids = Attendance.objects.filter(
+        check_out__isnull=True,
+        student__is_staff=False,
+    ).values_list('student_id', flat=True).distinct()
+
+    students_checked_in = User.objects.filter(
+        id__in=checked_in_student_ids,
+        is_staff=False,
+        last_latitude__isnull=False,
+        last_longitude__isnull=False,
+    )
+
+    # Combine both querysets
+    students = students_recent | students_checked_in
+    students = students.distinct()
+
     student_data = []
     for s in students:
         is_inside = False
         for ev in active_events:
-            if haversine_m(s.last_latitude, s.last_longitude, ev.latitude, ev.longitude) <= ev.radius:
-                is_inside = True
-                break
+            if s.last_latitude and s.last_longitude:
+                if haversine_m(s.last_latitude, s.last_longitude, ev.latitude, ev.longitude) <= ev.radius:
+                    is_inside = True
+                    break
         student_data.append({
             'id': s.id,
             'name': s.get_full_name() or s.username,
             'latitude': s.last_latitude,
             'longitude': s.last_longitude,
             'is_inside': is_inside,
-            'last_seen': s.last_location_update.isoformat(),
+            'last_seen': s.last_location_update.isoformat() if s.last_location_update else None,
         })
 
     return JsonResponse({'students': student_data})
 
 @staff_member_required(login_url='/admin-login/')
 def attendance_records(request):
-    records = Attendance.objects.select_related('student', 'event').all().order_by('-event__start_time', '-check_in')
+    records = Attendance.objects.select_related('student', 'event').filter(student__is_staff=False).order_by('-event__start_time', '-check_in')
     data = []
     for r in records:
         duration = None
@@ -157,7 +183,7 @@ def export_attendance(request):
     from django.http import HttpResponse
     
     event_name = request.GET.get('event', '')
-    records = Attendance.objects.select_related('student', 'event')
+    records = Attendance.objects.select_related('student', 'event').filter(student__is_staff=False)
     if event_name:
         records = records.filter(event__name=event_name)
     

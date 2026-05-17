@@ -21,7 +21,10 @@ export const api = {
 
   getEvents: () => fetch(`${API_BASE}/api/events/`, {
     credentials: 'include',
-  }).then(r => r.json()),
+  }).then(r => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  }),
 
   trackAttendance: (data) => fetch(`${API_BASE}/api/track/`, {
     method: 'POST',

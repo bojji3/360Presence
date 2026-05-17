@@ -17,6 +17,8 @@ def student_register(request):
         password = data.get('password')
         email = data.get('email', '')
         phone = data.get('phone', '')
+        first_name = data.get('first_name', '')
+        last_name = data.get('last_name', '')
         
         if User.objects.filter(username=username).exists():
             return JsonResponse({'error': 'Username exists'}, status=400)
@@ -28,6 +30,8 @@ def student_register(request):
             user_type='student'
         )
         user.phone = phone
+        user.first_name = first_name
+        user.last_name = last_name
         user.save()
         
         return JsonResponse({'success': True, 'user_id': user.id, 'username': user.username})
@@ -51,11 +55,14 @@ def student_login(request):
             if role == 'student' and user.is_staff:
                 return JsonResponse({'error': 'Admin accounts must use the admin login.'}, status=403)
             login(request, user)
+            full_name = user.get_full_name() or user.username
             return JsonResponse({
                 'success': True,
                 'token': f'token_{user.id}_{user.username}',
                 'user_id': user.id,
                 'username': user.username,
+                'full_name': full_name,
+                'email': user.email or '',
                 'user_type': user.user_type,
                 'is_staff': user.is_staff,
                 'redirect': '/admin-dashboard/' if user.is_staff else '/student-dashboard/',
@@ -75,16 +82,15 @@ def student_logout(request):
 def get_active_events(request):
     from django.utils import timezone
     now = timezone.now()
-    events = Event.objects.filter(
-        is_active=True,
-        end_time__gte=now
-    ).order_by('start_time')
+    events = Event.objects.filter(is_active=True).order_by('start_time')
     events_data = []
     for e in events:
-        if e.start_time <= now <= e.end_time:
+        if now < e.start_time:
+            status = 'upcoming'
+        elif e.start_time <= now <= e.end_time:
             status = 'active'
         else:
-            status = 'upcoming'
+            status = 'past'
         events_data.append({
             'id': e.id,
             'name': e.name,
@@ -96,6 +102,7 @@ def get_active_events(request):
             'start_time': e.start_time.isoformat(),
             'end_time': e.end_time.isoformat(),
             'status': status,
+            'is_active': e.is_active,
         })
     return JsonResponse({'events': events_data})
 
@@ -197,7 +204,8 @@ def present_students(request, event_id):
         checked_in = Attendance.objects.filter(
             event=event,
             check_in__isnull=False,
-            check_out__isnull=True
+            check_out__isnull=True,
+            student__is_staff=False
         ).select_related('student')
         
         students = [{

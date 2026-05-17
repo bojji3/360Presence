@@ -9,7 +9,12 @@ from presence import api_views, student_views, admin_views, page_views
 @staff_member_required(login_url='/admin-login/')
 def admin_dashboard(request):
     from django.shortcuts import render
-    return render(request, 'admin_dashboard.html')
+    from django.views.decorators.cache import never_cache
+    response = render(request, 'admin_dashboard.html')
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
 
 def home(request):
     if request.user.is_authenticated:

@@ -1,63 +1,48 @@
-import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { LogIn, User, Lock, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 
-function FloatingOrb({ position, color, speed }) {
-  const meshRef = useRef(null);
-  
-  useFrame((state) => {
-    if (meshRef.current) {
-      meshRef.current.position.x = position[0] + Math.sin(state.clock.elapsedTime * speed) * 2;
-      meshRef.current.position.y = position[1] + Math.cos(state.clock.elapsedTime * speed * 0.7) * 2;
-    }
-  });
+const GROUND = '#f4f3ef';
+const GROUND_2 = '#eceae4';
+const HAIR = '#dcd9cf';
+const HAIR_2 = '#c6c3b7';
+const INK = '#141412';
+const INK_2 = '#2a2a26';
+const MUTED = '#7a766d';
+const MUTED_2 = '#a9a59a';
+const DARK = '#0b0c0a';
+const DARK_2 = '#141410';
+const DARK_HAIR = '#22221e';
+const ON_DARK = '#f4f3ef';
+const ON_DARK_2 = '#c6c3b7';
+const ON_DARK_M = '#7a766d';
 
+const SANS = "'Hanken Grotesk', -apple-system, system-ui, sans-serif";
+const INTER = "'Inter', -apple-system, system-ui, sans-serif";
+
+const EASE = [0.22, 1, 0.36, 1];
+
+function Logo({ size = 48, color = INK }) {
   return (
-    <mesh ref={meshRef} position={position}>
-      <sphereGeometry args={[1, 32, 32]} />
-      <meshBasicMaterial color={color} transparent opacity={0.3} />
-    </mesh>
-  );
-}
-
-function Particles() {
-  const particlesRef = useRef(null);
-  const count = 200;
-  
-  const positions = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 20;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 20;
-  }
-
-  useFrame((state) => {
-    if (particlesRef.current) {
-      particlesRef.current.rotation.y = state.clock.elapsedTime * 0.05;
-      particlesRef.current.rotation.x = state.clock.elapsedTime * 0.02;
-    }
-  });
-
-  return (
-    <points ref={particlesRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={count}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial size={0.02} color="#00f5ff" transparent opacity={0.6} />
-    </points>
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden>
+      <rect x="0.5" y="0.5" width="39" height="39" stroke={color} strokeWidth="1.25" />
+      <circle cx="20" cy="20" r="12" stroke={color} strokeWidth="1.25" />
+      <circle cx="20" cy="20" r="5" stroke={color} strokeWidth="1.25" />
+      <circle cx="20" cy="20" r="1.5" fill={color} />
+      <line x1="20" y1="4" x2="20" y2="9" stroke={color} strokeWidth="1.25" />
+      <line x1="20" y1="31" x2="20" y2="36" stroke={color} strokeWidth="1.25" />
+      <line x1="4" y1="20" x2="9" y2="20" stroke={color} strokeWidth="1.25" />
+      <line x1="31" y1="20" x2="36" y2="20" stroke={color} strokeWidth="1.25" />
+    </svg>
   );
 }
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
@@ -78,13 +63,13 @@ export default function LoginPage() {
           localStorage.setItem('token', data.token || 'session-active');
           localStorage.setItem('user_type', data.user_type);
           localStorage.setItem('username', data.username);
-          
+          localStorage.setItem('full_name', data.full_name || data.username);
           navigate('/dashboard');
         } else {
           setError(data.error || 'Login failed');
         }
       } else {
-        const data = await api.register({ username, email, password });
+        const data = await api.register({ firstName, lastName, username, email, password });
         if (data.success) {
           setIsLogin(true);
           setError('');
@@ -101,182 +86,380 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-dark-bg">
-      <div className="absolute inset-0">
-        <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
-          <ambientLight intensity={0.5} />
-          <FloatingOrb position={[-3, 2, -2]} color="#00f5ff" speed={0.3} />
-          <FloatingOrb position={[3, -2, -3]} color="#bf00ff" speed={0.2} />
-          <FloatingOrb position={[0, 3, -4]} color="#ff006e" speed={0.4} />
-          <Particles />
-        </Canvas>
-      </div>
-
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ backgroundColor: GROUND, fontFamily: SANS, WebkitFontSmoothing: 'antialiased' }}
+    >
+      <div className="flex-1 flex items-center justify-center p-6">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
+          transition={{ duration: 0.5, ease: EASE }}
           className="w-full max-w-md"
         >
-          <div className="text-center mb-12">
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-              className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6"
-              style={{
-                background: 'linear-gradient(135deg, rgba(0, 245, 255, 0.2), rgba(191, 0, 255, 0.2))',
-                backdropFilter: 'blur(20px)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-              }}
-            >
-              <Sparkles className="w-10 h-10 text-neon-blue" />
-            </motion.div>
-            <h1 className="text-5xl font-bold mb-4 gradient-text">360Presence</h1>
-            <p className="text-gray-400 text-lg">Next-generation attendance tracking</p>
-          </div>
-
-          <motion.div
-            className="glass rounded-3xl p-8 relative overflow-hidden"
+          <div
+            className="rounded-2xl p-10 sm:p-12"
             style={{
-              background: 'rgba(10, 10, 15, 0.8)',
-              backdropFilter: 'blur(30px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'white',
+              border: `1px solid ${HAIR}`,
             }}
-            whileHover={{ boxShadow: '0 0 60px rgba(0, 245, 255, 0.1)' }}
           >
+            {/* Brand */}
+            <div className="text-center mb-10">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.1, type: 'spring', stiffness: 300, damping: 20 }}
+                className="inline-block mb-5"
+              >
+                <Logo size={56} color={INK} />
+              </motion.div>
+              <h1
+                style={{
+                  fontFamily: SANS,
+                  fontSize: 32,
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                  color: INK,
+                }}
+              >
+                360Presence
+              </h1>
+              <p
+                style={{
+                  fontFamily: INTER,
+                  fontSize: 15,
+                  fontWeight: 500,
+                  color: MUTED,
+                  marginTop: 8,
+                }}
+              >
+                {isLogin ? 'Student Login' : 'Create Account'}
+              </p>
+            </div>
+
+            {/* Toggle */}
             <div
-              className="absolute inset-0 opacity-30"
-              style={{
-                background: 'linear-gradient(135deg, rgba(0, 245, 255, 0.1) 0%, rgba(191, 0, 255, 0.1) 100%)',
-              }}
-            />
+              className="flex rounded-xl p-1 mb-8"
+              style={{ backgroundColor: GROUND }}
+            >
+              <button
+                type="button"
+                onClick={() => setIsLogin(true)}
+                className="flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-200"
+                style={{
+                  fontFamily: INTER,
+                  backgroundColor: isLogin ? INK : 'transparent',
+                  color: isLogin ? GROUND : MUTED,
+                }}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsLogin(false)}
+                className="flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-200"
+                style={{
+                  fontFamily: INTER,
+                  backgroundColor: !isLogin ? INK : 'transparent',
+                  color: !isLogin ? GROUND : MUTED,
+                }}
+              >
+                Register
+              </button>
+            </div>
 
-            <div className="relative">
-              <div className="flex mb-8 rounded-xl p-1" style={{ background: 'rgba(255, 255, 255, 0.05)' }}>
-                <button
-                  onClick={() => setIsLogin(true)}
-                  className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                    isLogin ? 'bg-gradient-to-r from-neon-blue to-neon-purple text-white' : 'text-gray-400'
-                  }`}
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => setIsLogin(false)}
-                  className={`flex-1 py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                    !isLogin ? 'bg-gradient-to-r from-neon-purple to-neon-pink text-white' : 'text-gray-400'
-                  }`}
-                >
-                  Register
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Form */}
+            <form onSubmit={handleSubmit}>
+              <AnimatePresence mode="wait">
                 <motion.div
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
+                  key={isLogin ? 'login' : 'register'}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.25, ease: EASE }}
                 >
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Username</label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  {/* Name fields (register only) */}
+                  {!isLogin && (
+                    <div className="flex gap-4 mb-5">
+                      <div className="flex-1">
+                        <label
+                          className="block mb-2"
+                          style={{ fontFamily: INTER, fontSize: 14, fontWeight: 600, color: INK }}
+                        >
+                          First Name
+                        </label>
+                        <input
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="Juan"
+                          required
+                          className="w-full px-4 py-3.5 rounded-xl transition-all duration-200"
+                          style={{
+                            fontFamily: INTER,
+                            fontSize: 16,
+                            border: `1.5px solid ${HAIR}`,
+                            backgroundColor: GROUND,
+                            color: INK,
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = INK;
+                            e.target.style.backgroundColor = 'white';
+                            e.target.style.boxShadow = `0 0 0 3px rgba(20, 20, 18, 0.08)`;
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = HAIR;
+                            e.target.style.backgroundColor = GROUND;
+                            e.target.style.boxShadow = 'none';
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label
+                          className="block mb-2"
+                          style={{ fontFamily: INTER, fontSize: 14, fontWeight: 600, color: INK }}
+                        >
+                          Last Name
+                        </label>
+                        <input
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Dela Cruz"
+                          required
+                          className="w-full px-4 py-3.5 rounded-xl transition-all duration-200"
+                          style={{
+                            fontFamily: INTER,
+                            fontSize: 16,
+                            border: `1.5px solid ${HAIR}`,
+                            backgroundColor: GROUND,
+                            color: INK,
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = INK;
+                            e.target.style.backgroundColor = 'white';
+                            e.target.style.boxShadow = `0 0 0 3px rgba(20, 20, 18, 0.08)`;
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = HAIR;
+                            e.target.style.backgroundColor = GROUND;
+                            e.target.style.boxShadow = 'none';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Username */}
+                  <div className="mb-5">
+                    <label
+                      className="block mb-2"
+                      style={{ fontFamily: INTER, fontSize: 14, fontWeight: 600, color: INK }}
+                    >
+                      Username
+                    </label>
                     <input
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="input-field pl-12"
                       placeholder="Enter your username"
                       required
+                      className="w-full px-4 py-3.5 rounded-xl transition-all duration-200"
+                      style={{
+                        fontFamily: INTER,
+                        fontSize: 16,
+                        border: `1.5px solid ${HAIR}`,
+                        backgroundColor: GROUND,
+                        color: INK,
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = INK;
+                        e.target.style.backgroundColor = 'white';
+                        e.target.style.boxShadow = `0 0 0 3px rgba(20, 20, 18, 0.08)`;
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = HAIR;
+                        e.target.style.backgroundColor = GROUND;
+                        e.target.style.boxShadow = 'none';
+                      }}
                     />
                   </div>
-                </motion.div>
 
-                {!isLogin && (
-                  <motion.div
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  {/* Email (register only) */}
+                  {!isLogin && (
+                    <motion.div
+                      className="mb-5"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <label
+                        className="block mb-2"
+                        style={{ fontFamily: INTER, fontSize: 14, fontWeight: 600, color: INK }}
+                      >
+                        Email
+                      </label>
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="input-field pl-12"
                         placeholder="Enter your email"
                         required
+                        className="w-full px-4 py-3.5 rounded-xl transition-all duration-200"
+                        style={{
+                          fontFamily: INTER,
+                          fontSize: 16,
+                          border: `1.5px solid ${HAIR}`,
+                          backgroundColor: GROUND,
+                          color: INK,
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = INK;
+                          e.target.style.backgroundColor = 'white';
+                          e.target.style.boxShadow = `0 0 0 3px rgba(20, 20, 18, 0.08)`;
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = HAIR;
+                          e.target.style.backgroundColor = GROUND;
+                          e.target.style.boxShadow = 'none';
+                        }}
                       />
-                    </div>
-                  </motion.div>
-                )}
+                    </motion.div>
+                  )}
 
-                <motion.div
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: isLogin ? 0.3 : 0.4 }}
-                >
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="input-field pl-12 pr-12"
-                      placeholder="Enter your password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                  {/* Password */}
+                  <div className="mb-6">
+                    <label
+                      className="block mb-2"
+                      style={{ fontFamily: INTER, fontSize: 14, fontWeight: 600, color: INK }}
                     >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
+                      Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter your password"
+                        required
+                        className="w-full px-4 py-3.5 pr-12 rounded-xl transition-all duration-200"
+                        style={{
+                          fontFamily: INTER,
+                          fontSize: 16,
+                          border: `1.5px solid ${HAIR}`,
+                          backgroundColor: GROUND,
+                          color: INK,
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = INK;
+                          e.target.style.backgroundColor = 'white';
+                          e.target.style.boxShadow = `0 0 0 3px rgba(20, 20, 18, 0.08)`;
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = HAIR;
+                          e.target.style.backgroundColor = GROUND;
+                          e.target.style.boxShadow = 'none';
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2"
+                        style={{ color: MUTED }}
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
+              </AnimatePresence>
 
+              {/* Error */}
+              <AnimatePresence>
                 {error && (
                   <motion.div
-                    initial={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="text-red-400 text-sm text-center py-2 rounded-lg bg-red-500/10 border border-red-500/20"
+                    exit={{ opacity: 0, y: -8 }}
+                    className="mb-5 px-4 py-3 rounded-xl text-center"
+                    style={{
+                      fontFamily: INTER,
+                      fontSize: 14,
+                      fontWeight: 500,
+                      backgroundColor: '#fef2f2',
+                      color: '#dc2626',
+                      border: '1px solid #fecaca',
+                    }}
                   >
                     {error}
                   </motion.div>
                 )}
+              </AnimatePresence>
 
-                <motion.button
-                  type="submit"
-                  disabled={isLoading}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <LogIn className="w-5 h-5" />
-                      {isLogin ? 'Sign In' : 'Create Account'}
-                    </>
-                  )}
-                </motion.button>
-              </form>
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-4 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50"
+                style={{
+                  fontFamily: INTER,
+                  fontSize: 16,
+                  backgroundColor: INK,
+                  color: GROUND,
+                }}
+                onMouseEnter={(e) => { if (!e.target.disabled) e.target.style.backgroundColor = INK_2; }}
+                onMouseLeave={(e) => { e.target.style.backgroundColor = INK; }}
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto" />
+                ) : (
+                  isLogin ? 'Sign In' : 'Create Account'
+                )}
+              </button>
+            </form>
+
+            {/* Links */}
+            <div
+              className="mt-8 text-center"
+              style={{ fontFamily: INTER, fontSize: 14, color: MUTED }}
+            >
+              {isLogin ? (
+                <>
+                  Don&apos;t have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setIsLogin(false)}
+                    style={{ color: INK, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', borderBottom: `1px solid ${HAIR_2}` }}
+                  >
+                    Create one
+                  </button>
+                </>
+              ) : (
+                <>
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setIsLogin(true)}
+                    style={{ color: INK, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', borderBottom: `1px solid ${HAIR_2}` }}
+                  >
+                    Sign in
+                  </button>
+                </>
+              )}
             </div>
-          </motion.div>
+          </div>
 
+          {/* Footer */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="text-center text-gray-500 text-sm mt-6"
+            transition={{ delay: 0.3 }}
+            className="text-center mt-8"
+            style={{ fontFamily: INTER, fontSize: 13, color: MUTED_2 }}
           >
-            Experience the future of attendance tracking
+            © 2026 · The Presence Bureau
           </motion.p>
         </motion.div>
       </div>

@@ -2,8 +2,18 @@ from django.db import models
 from django.conf import settings
 
 class Event(models.Model):
+    CATEGORY_CHOICES = [
+        ('seminar', 'Seminar'),
+        ('workshop', 'Workshop'),
+        ('conference', 'Conference'),
+        ('orientation', 'Orientation'),
+        ('exam', 'Exam'),
+        ('meeting', 'Meeting'),
+        ('other', 'Other'),
+    ]
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True, default='')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
     latitude = models.FloatField()
     longitude = models.FloatField()
     radius = models.IntegerField(default=100)
