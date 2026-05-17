@@ -1,4 +1,7 @@
-const API_BASE = '';
+// Backend API URL - configure this in your Vercel project settings
+// Go to your Vercel project → Settings → Environment Variables
+// Add: NEXT_PUBLIC_API_URL = your-django-backend-url (e.g., https://your-app.onrender.com)
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 export const api = {
   login: (data) => fetch(`${API_BASE}/api/login/`, {
