@@ -199,27 +199,71 @@ def latest_announcements(request):
 
 @login_required
 def present_students(request, event_id):
+    from django.utils import timezone
+    from datetime import timedelta
+    from math import radians, sin, cos, sqrt, atan2
+
+    def haversine_m(lat1, lon1, lat2, lon2):
+        R = 6371000
+        p1, p2 = radians(lat1), radians(lat2)
+        dphi = radians(lat2 - lat1)
+        dlmb = radians(lon2 - lon1)
+        a = sin(dphi/2)**2 + cos(p1)*cos(p2)*sin(dlmb/2)**2
+        return R * 2 * atan2(sqrt(a), sqrt(1-a))
+
     try:
         event = Event.objects.get(id=event_id)
-        checked_in = Attendance.objects.filter(
+        now = timezone.now()
+        recent_cutoff = now - timedelta(minutes=60)
+
+        # Pool 1: Students with open attendance sessions
+        checked_in_ids = set(Attendance.objects.filter(
             event=event,
             check_in__isnull=False,
             check_out__isnull=True,
             student__is_staff=False
-        ).select_related('student')
-        
-        students = [{
-            'name': s.student.get_full_name() or s.student.username,
-            'check_in_time': s.check_in.isoformat() if s.check_in else None,
-            'latitude': s.student.last_latitude,
-            'longitude': s.student.last_longitude,
-            'last_seen': s.student.last_location_update.isoformat() if s.student.last_location_update else None,
-        } for s in checked_in]
-        
+        ).values_list('student_id', flat=True))
+
+        # Pool 2: Students with recent location updates inside event radius
+        nearby_ids = set()
+        students_with_location = User.objects.filter(
+            user_type='student',
+            is_staff=False,
+            last_latitude__isnull=False,
+            last_longitude__isnull=False,
+            last_location_update__gte=recent_cutoff
+        )
+        for s in students_with_location:
+            dist = haversine_m(s.last_latitude, s.last_longitude, event.latitude, event.longitude)
+            if dist <= event.radius:
+                nearby_ids.add(s.id)
+
+        # Combine both pools
+        all_student_ids = checked_in_ids | nearby_ids
+        students = User.objects.filter(id__in=all_student_ids, is_staff=False)
+
+        # Build attendance lookup
+        attendance_map = {}
+        for a in Attendance.objects.filter(event=event, check_out__isnull=True, student_id__in=all_student_ids):
+            attendance_map[a.student_id] = a
+
+        result = []
+        for s in students:
+            att = attendance_map.get(s.id)
+            result.append({
+                'id': s.id,
+                'name': s.get_full_name() or s.username,
+                'username': s.username,
+                'check_in_time': att.check_in.isoformat() if att and att.check_in else None,
+                'latitude': s.last_latitude,
+                'longitude': s.last_longitude,
+                'last_seen': s.last_location_update.isoformat() if s.last_location_update else None,
+            })
+
         return JsonResponse({
             'event': event.name,
-            'count': len(students),
-            'students': students
+            'count': len(result),
+            'students': result
         })
     except Event.DoesNotExist:
         return JsonResponse({'error': 'Event not found'}, status=404)

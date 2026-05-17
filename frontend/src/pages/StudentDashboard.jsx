@@ -150,8 +150,10 @@ export default function StudentDashboard() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [presentStudents, setPresentStudents] = useState([]);
+  const presentStudentsRef = useRef([]);
   const [now, setNow] = useState(new Date());
   const [myLocation, setMyLocation] = useState(null);
+  const myLocationRef = useRef(null);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
@@ -175,8 +177,14 @@ export default function StudentDashboard() {
   useEffect(() => {
     document.body.style.backgroundColor = GROUND;
     document.body.style.margin = '0';
-    return () => { document.body.style.backgroundColor = ''; document.body.style.margin = ''; };
+    const style = document.createElement('style');
+    style.textContent = `.light-popup .maplibregl-popup-content{background:#fff;border-radius:8px;padding:8px 12px;box-shadow:0 8px 32px rgba(0,0,0,0.15);border:1px solid #e5e7eb}.light-popup .maplibregl-popup-tip{border-top-color:#fff}.light-popup .maplibregl-popup-close-button{color:#7a766d;font-size:16px}`;
+    document.head.appendChild(style);
+    return () => { document.body.style.backgroundColor = ''; document.body.style.margin = ''; document.head.removeChild(style); };
   }, []);
+
+  useEffect(() => { myLocationRef.current = myLocation; }, [myLocation]);
+  useEffect(() => { presentStudentsRef.current = presentStudents; }, [presentStudents]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -379,14 +387,14 @@ export default function StudentDashboard() {
       style: {
         version: 8,
         sources: {
-          cartoDark: {
+          cartoLight: {
             type: 'raster',
-            tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'],
+            tiles: ['https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'],
             tileSize: 256,
             attribution: '© OpenStreetMap contributors © CARTO',
           },
         },
-        layers: [{ id: 'cartoDark', type: 'raster', source: 'cartoDark' }],
+        layers: [{ id: 'cartoLight', type: 'raster', source: 'cartoLight' }],
       },
       center: [lng, lat],
       zoom: 16,
@@ -411,11 +419,11 @@ export default function StudentDashboard() {
         source: 'eventCircle',
         paint: {
           'circle-radius': ['interpolate', ['linear'], ['zoom'], 15, radiusMeters / 10, 18, radiusMeters],
-          'circle-color': ON_DARK,
-          'circle-opacity': 0.04,
-          'circle-stroke-color': ON_DARK,
-          'circle-stroke-width': 1,
-          'circle-stroke-opacity': 0.6,
+          'circle-color': '#7c3aed',
+          'circle-opacity': 0.1,
+          'circle-stroke-color': '#7c3aed',
+          'circle-stroke-width': 3,
+          'circle-stroke-opacity': 0.9,
         },
       });
 
@@ -423,49 +431,55 @@ export default function StudentDashboard() {
         markersRef.current.forEach(m => { try { m.remove(); } catch {} });
         markersRef.current = [];
 
-        presentStudents.forEach((s) => {
+        // Student markers (blue dot)
+        presentStudentsRef.current.forEach((s) => {
           if (s.latitude == null || s.longitude == null) return;
           const el = document.createElement('div');
-          el.style.width = '10px';
-          el.style.height = '10px';
+          el.style.width = '16px';
+          el.style.height = '16px';
           el.style.borderRadius = '50%';
-          el.style.background = ON_DARK;
-          el.style.border = '1.5px solid ' + DARK;
-          const marker = new maplibregl.Marker({ element: el })
+          el.style.background = '#2563eb';
+          el.style.border = '3px solid #fff';
+          el.style.boxShadow = '0 2px 8px rgba(37,99,235,0.5)';
+          const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
             .setLngLat([s.longitude, s.latitude])
             .setPopup(
-              new maplibregl.Popup({ offset: 10 }).setHTML(
-                `<div style="font-family:${SANS};font-size:12px;color:#141412"><b>${s.name || s.username}</b>${s.check_in_time ? '<br/><span style="color:#7a766d">' + new Date(s.check_in_time).toLocaleTimeString() + '</span>' : ''}</div>`
+              new maplibregl.Popup({ offset: 12, className: 'light-popup' }).setHTML(
+                `<div style="font-family:${SANS};font-size:13px;color:#141412;font-weight:600">${s.name || s.username}</div>`
               )
             )
             .addTo(map);
           markersRef.current.push(marker);
         });
 
-        const loc = myLocation || (navigator.geolocation ? null : null);
+        // Own location marker (green dot with ring)
+        const loc = myLocationRef.current;
         if (loc) {
           const el = document.createElement('div');
-          el.style.width = '16px';
-          el.style.height = '16px';
+          el.style.width = '20px';
+          el.style.height = '20px';
           el.style.borderRadius = '50%';
-          el.style.background = '#3b82f6';
-          el.style.border = '2px solid white';
-          el.style.boxShadow = '0 0 8px rgba(59,130,246,0.6)';
-          const marker = new maplibregl.Marker({ element: el })
+          el.style.background = '#16a34a';
+          el.style.border = '3px solid #fff';
+          el.style.boxShadow = '0 2px 10px rgba(22,163,74,0.5)';
+          const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
             .setLngLat([loc.longitude, loc.latitude])
-            .setPopup(new maplibregl.Popup({ offset: 10 }).setHTML(`<div style="font-family:${SANS};font-size:12px;color:#141412"><b>You are here</b></div>`))
+            .setPopup(new maplibregl.Popup({ offset: 14, className: 'light-popup' }).setHTML(`<div style="font-family:${SANS};font-size:13px;color:#141412;font-weight:600">You are here</div>`))
             .addTo(map);
           markersRef.current.push(marker);
         }
 
+        // Event center marker (purple target)
         const centerEl = document.createElement('div');
-        centerEl.style.position = 'relative';
-        centerEl.style.width = '20px';
-        centerEl.style.height = '20px';
-        centerEl.innerHTML = `<div style="position:absolute;inset:0;border:1px solid ${ON_DARK};border-radius:50%;"></div><div style="position:absolute;inset:6px;background:${ON_DARK};border-radius:50%;"></div>`;
-        const marker = new maplibregl.Marker({ element: centerEl })
+        centerEl.style.width = '18px';
+        centerEl.style.height = '18px';
+        centerEl.style.borderRadius = '50%';
+        centerEl.style.border = '3px solid #7c3aed';
+        centerEl.style.boxShadow = '0 2px 10px rgba(124,58,237,0.4)';
+        centerEl.style.backgroundColor = '#7c3aed';
+        const marker = new maplibregl.Marker({ element: centerEl, anchor: 'center' })
           .setLngLat([lng, lat])
-          .setPopup(new maplibregl.Popup({ offset: 10 }).setHTML(`<b style="font-family:${SANS};font-weight:600;font-size:14px;color:#141412">${selectedMapEvent.name}</b>`))
+          .setPopup(new maplibregl.Popup({ offset: 12, className: 'light-popup' }).setHTML(`<b style="font-family:${SANS};font-weight:600;font-size:14px;color:#141412">${selectedMapEvent.name}</b><div style="font-family:${INTER};font-size:12px;color:#7a766d;margin-top:2px">Radius: ${selectedMapEvent.radius || 100}m</div>`))
           .addTo(map);
         markersRef.current.push(marker);
       };
@@ -617,12 +631,12 @@ export default function StudentDashboard() {
                 style={{
                   backgroundColor: INK,
                   color: GROUND,
-                  fontFamily: SANS,
-                  fontSize: 16,
-                  fontWeight: 700,
                 }}
               >
-                {(user.full_name || '?').charAt(0).toUpperCase()}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
               </div>
               <div className="flex flex-col items-start leading-none">
                 <span style={{ fontFamily: SANS, fontSize: 16, fontWeight: 600, color: INK }}>{user.full_name}</span>
@@ -1008,7 +1022,26 @@ export default function StudentDashboard() {
                           Radius: {selectedMapEvent.radius || 100}m
                         </div>
                       </div>
-                      <div ref={mapContainerRef} style={{ height: 600, width: '100%', backgroundColor: DARK_2 }} />
+
+                      {/* Legend */}
+                      <div className="flex items-center gap-6 px-6 py-3" style={{ borderBottom: `1px solid ${DARK_HAIR2}`, backgroundColor: 'rgba(0,0,0,0.03)' }}>
+                        <div className="flex items-center gap-2">
+                          <span style={{ width: 14, height: 14, borderRadius: '50%', background: '#2563eb', border: '2px solid #fff', display: 'inline-block', boxShadow: '0 2px 6px rgba(37,99,235,0.4)' }} />
+                          <span style={{ fontFamily: INTER, fontSize: 13, color: ON_DARK_M }}>Students</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span style={{ width: 14, height: 14, borderRadius: '50%', background: '#16a34a', border: '2px solid #fff', display: 'inline-block', boxShadow: '0 2px 6px rgba(22,163,74,0.4)' }} />
+                          <span style={{ fontFamily: INTER, fontSize: 13, color: ON_DARK_M }}>You</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid #7c3aed', display: 'inline-block', boxShadow: '0 2px 6px rgba(124,58,237,0.3)' }}>
+                            <span style={{ position: 'absolute', width: 6, height: 6, borderRadius: '50%', background: '#7c3aed', transform: 'translate(2px, 2px)' }} />
+                          </span>
+                          <span style={{ fontFamily: INTER, fontSize: 13, color: ON_DARK_M }}>Event Center</span>
+                        </div>
+                      </div>
+
+                      <div ref={mapContainerRef} style={{ height: 600, width: '100%', backgroundColor: '#f8f7f4' }} />
                     </div>
 
                     <div className="flex flex-col">
@@ -1100,17 +1133,23 @@ export default function StudentDashboard() {
               >
                 <Label dark>Your profile</Label>
                 <div>
+                  <div style={{ marginBottom: 24 }}>
+                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke={ON_DARK} strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </div>
                   <h2
                     style={{
                       fontFamily: SANS,
-                      fontSize: 'clamp(80px, 11vw, 176px)',
+                      fontSize: 'clamp(40px, 5vw, 72px)',
                       fontWeight: 600,
-                      letterSpacing: '-0.04em',
-                      lineHeight: 0.86,
+                      letterSpacing: '-0.03em',
+                      lineHeight: 1,
                       color: ON_DARK,
                     }}
                   >
-                    {user.full_name.split(' ')[0]}.
+                    {user.full_name}
                   </h2>
                   <p
                     className="mt-8 max-w-md"
